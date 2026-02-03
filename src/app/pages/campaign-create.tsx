@@ -7,13 +7,16 @@ import { Switch } from '@/app/components/ui/switch';
 import { Badge } from '@/app/components/ui/badge';
 import { ArrowLeft, ArrowRight, Upload, Youtube, Instagram, Facebook, Lock, AlertTriangle, CreditCard } from 'lucide-react';
 import { useState } from 'react';
+import { api } from '@/lib/api';
+import type { ToastType } from '@/app/components/toast';
 
 interface CampaignCreateProps {
   onComplete: (campaignId: string) => void;
   onCancel: () => void;
+  onToast: (message: string, type?: ToastType) => void;
 }
 
-export function CampaignCreate({ onComplete, onCancel }: CampaignCreateProps) {
+export function CampaignCreate({ onComplete, onCancel, onToast }: CampaignCreateProps) {
   const [step, setStep] = useState(1);
   const [campaignData, setCampaignData] = useState({
     name: '',
@@ -32,6 +35,8 @@ export function CampaignCreate({ onComplete, onCancel }: CampaignCreateProps) {
     reviewContent: false,
     budget: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   const productTypes = [
     'Fashion & Apparel',
@@ -73,17 +78,51 @@ export function CampaignCreate({ onComplete, onCancel }: CampaignCreateProps) {
     return true;
   };
 
-  const handleStartCampaign = () => {
-    // Mock Razorpay checkout
-    const mockCampaignId = 'camp_' + Math.random().toString(36).substr(2, 9);
-    setTimeout(() => {
-      onComplete(mockCampaignId);
-    }, 1000);
+  const handleStartCampaign = async () => {
+    setIsSubmitting(true);
+    try {
+      const budgetPaise = Math.round(Number(campaignData.budget) * 100);
+      const response = await api.createCampaign({
+        title: campaignData.name,
+        description: campaignData.description,
+        thumbnail: campaignData.thumbnail || undefined,
+        platforms: campaignData.platforms,
+        ratePer1kViewsPaise: Math.round(
+          Math.min(...campaignData.platforms.map((platform) => campaignData.rates[platform as keyof typeof campaignData.rates])) * 100
+        ),
+        budgetTotalPaise: budgetPaise,
+      });
+      const campaign = response.data;
+      await api.createRazorpayOrder({ campaignId: campaign.id, amountPaise: budgetPaise });
+      onToast('Campaign created. Proceed with Razorpay deposit to activate.', 'success');
+      onComplete(campaign.id);
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Unable to start campaign.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDraft = () => {
-    // Save as draft logic
-    onCancel();
+  const handleDraft = async () => {
+    setIsSavingDraft(true);
+    try {
+      await api.createCampaign({
+        title: campaignData.name,
+        description: campaignData.description,
+        thumbnail: campaignData.thumbnail || undefined,
+        platforms: campaignData.platforms,
+        ratePer1kViewsPaise: Math.round(
+          Math.min(...campaignData.platforms.map((platform) => campaignData.rates[platform as keyof typeof campaignData.rates])) * 100
+        ),
+        budgetTotalPaise: Math.round(Number(campaignData.budget || 0) * 100),
+      });
+      onToast('Draft saved.', 'success');
+      onCancel();
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Unable to save draft.', 'error');
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
 
   const steps = [
@@ -434,16 +473,16 @@ export function CampaignCreate({ onComplete, onCancel }: CampaignCreateProps) {
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={handleDraft} className="flex-1">
+              <Button variant="outline" onClick={handleDraft} className="flex-1" disabled={isSavingDraft || isSubmitting}>
                 Save as Draft
               </Button>
               <Button
                 onClick={handleStartCampaign}
-                disabled={!canProceed()}
+                disabled={!canProceed() || isSubmitting || isSavingDraft}
                 className="flex-1 bg-gradient-to-r from-primary to-chart-2 hover:shadow-lg hover:shadow-primary/50"
               >
                 <CreditCard className="mr-2 h-4 w-4" />
-                Start Campaign
+                {isSubmitting ? 'Processing...' : 'Start Campaign'}
               </Button>
             </>
           )}

@@ -10,17 +10,22 @@ import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { DollarSign, Target, Eye, Upload, RefreshCcw, Calendar, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import { api } from '@/lib/api';
+import type { ToastType } from '@/app/components/toast';
 
 interface CreatorDashboardProps {
   onCampaignClick: (id: string) => void;
   onDiscoverCampaigns: () => void;
+  onToast: (message: string, type?: ToastType) => void;
 }
 
-export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns }: CreatorDashboardProps) {
+export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast }: CreatorDashboardProps) {
   const [earningsPeriod, setEarningsPeriod] = useState('today');
   const [uploadModal, setUploadModal] = useState<{ open: boolean; campaignId?: string; campaignName?: string }>({ open: false });
   const [reelLink, setReelLink] = useState('');
   const [showReverifyToast, setShowReverifyToast] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [reverifyId, setReverifyId] = useState<string | null>(null);
 
   const earnings = {
     today: 2450,
@@ -65,16 +70,38 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns }: Creat
     },
   ];
 
-  const handleUpload = () => {
-    console.log('Uploading reel:', reelLink);
-    setUploadModal({ open: false });
-    setReelLink('');
+  const handleUpload = async () => {
+    if (!uploadModal.campaignId) return;
+    setIsUploading(true);
+    try {
+      await api.submitContent(uploadModal.campaignId, {
+        platform: 'instagram',
+        reelUrl: reelLink,
+      });
+      onToast('Submission received. Verification cycle queued.', 'success');
+      setUploadModal({ open: false });
+      setReelLink('');
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Unable to submit content.', 'error');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const handleReverify = (campaign: typeof joinedCampaigns[0]) => {
+  const handleReverify = async (campaign: typeof joinedCampaigns[0]) => {
     if (!campaign.canReverify) {
       setShowReverifyToast(true);
       setTimeout(() => setShowReverifyToast(false), 3000);
+      return;
+    }
+    setReverifyId(campaign.id);
+    try {
+      await api.reverifySubmission(campaign.id);
+      onToast('Re-verification requested for the current cycle.', 'success');
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Unable to request re-verification.', 'error');
+    } finally {
+      setReverifyId(null);
     }
   };
 
@@ -238,10 +265,10 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns }: Creat
                           size="sm"
                           variant="outline"
                           onClick={() => handleReverify(campaign)}
-                          disabled={!campaign.canReverify}
+                          disabled={!campaign.canReverify || reverifyId === campaign.id}
                         >
                           <RefreshCcw className="h-4 w-4 mr-2" />
-                          Re-verify
+                          {reverifyId === campaign.id ? 'Requesting...' : 'Re-verify'}
                         </Button>
                       </div>
                     </div>
@@ -306,11 +333,11 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns }: Creat
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={!reelLink}
+              disabled={!reelLink || isUploading}
               className="flex-1 bg-gradient-to-r from-primary to-chart-2"
             >
               <Upload className="h-4 w-4 mr-2" />
-              Verify & Upload
+              {isUploading ? 'Uploading...' : 'Verify & Upload'}
             </Button>
           </div>
         </div>

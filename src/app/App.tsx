@@ -196,6 +196,7 @@ export default function App() {
           onJoin={handleJoinCampaign}
           onManage={() => setCurrentPage('campaign-manage')}
           onBack={() => setCurrentPage('campaigns')}
+          onToast={addToast}
         />
       );
     }
@@ -209,6 +210,7 @@ export default function App() {
             addToast('Campaign created successfully!', 'success');
           }}
           onCancel={() => setCurrentPage('dashboard')}
+          onToast={addToast}
         />
       );
     }
@@ -237,6 +239,7 @@ export default function App() {
         <CreatorDashboard
           onCampaignClick={handleCampaignClick}
           onDiscoverCampaigns={() => setCurrentPage('campaigns')}
+          onToast={addToast}
         />
       );
     } else {

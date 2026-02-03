@@ -9,6 +9,8 @@ import { Label } from '@/app/components/ui/label';
 import { Checkbox } from '@/app/components/ui/checkbox';
 import { ArrowLeft, Eye, Users, DollarSign, Calendar, CheckCircle, Youtube, Instagram, Facebook, Upload } from 'lucide-react';
 import { useState } from 'react';
+import { api } from '@/lib/api';
+import type { ToastType } from '@/app/components/toast';
 
 interface CampaignDetailProps {
   campaignId: string;
@@ -16,9 +18,10 @@ interface CampaignDetailProps {
   onJoin: (campaignId: string) => void;
   onManage: () => void;
   onBack: () => void;
+  onToast: (message: string, type?: ToastType) => void;
 }
 
-export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack }: CampaignDetailProps) {
+export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack, onToast }: CampaignDetailProps) {
   const [joinModal, setJoinModal] = useState(false);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [handles, setHandles] = useState({
@@ -26,6 +29,7 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack 
     instagram: '',
     facebook: '',
   });
+  const [isJoining, setIsJoining] = useState(false);
 
   // Mock campaign data
   const campaign = {
@@ -70,9 +74,21 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack 
     }
   };
 
-  const handleJoinConfirm = () => {
-    onJoin(campaignId);
-    setJoinModal(false);
+  const handleJoinConfirm = async () => {
+    setIsJoining(true);
+    try {
+      await api.joinCampaign(campaignId, {
+        platforms: selectedPlatforms,
+        handles,
+      });
+      onJoin(campaignId);
+      onToast('Request sent to join campaign.', 'success');
+      setJoinModal(false);
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Unable to join campaign.', 'error');
+    } finally {
+      setIsJoining(false);
+    }
   };
 
   const togglePlatform = (platformId: string) => {
@@ -350,10 +366,10 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack 
             </Button>
             <Button
               onClick={handleJoinConfirm}
-              disabled={selectedPlatforms.length === 0}
+              disabled={selectedPlatforms.length === 0 || isJoining}
               className="flex-1 bg-gradient-to-r from-primary to-chart-2"
             >
-              Join Campaign
+              {isJoining ? 'Joining...' : 'Join Campaign'}
             </Button>
           </div>
         </div>
