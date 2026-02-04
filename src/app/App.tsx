@@ -251,6 +251,7 @@ export default function App() {
       return (
         <CreatorOnboarding
           onComplete={handleOnboardingComplete}
+          onBack={() => setCurrentPage('dashboard')}
           onToast={addToast}
         />
       );
@@ -265,6 +266,7 @@ export default function App() {
               addToast('Host onboarding completed!', 'success');
             }
           }}
+          onBack={() => setCurrentPage('dashboard')}
           onToast={addToast}
         />
       );
