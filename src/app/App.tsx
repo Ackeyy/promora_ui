@@ -89,16 +89,26 @@ export default function App() {
   const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const [supportOpen, setSupportOpen] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
-  const [creatorCampaigns, setCreatorCampaigns] = useState<CreatorCampaign[]>(() => {
-    if (typeof window === 'undefined') return [];
-    const stored = window.localStorage.getItem('creatorCampaigns');
-    return stored ? (JSON.parse(stored) as CreatorCampaign[]) : [];
-  });
+  const [creatorCampaigns, setCreatorCampaigns] = useState<CreatorCampaign[]>([]);
+  const [creatorCampaignsOwnerId, setCreatorCampaignsOwnerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem('creatorCampaigns', JSON.stringify(creatorCampaigns));
-  }, [creatorCampaigns]);
+    if (!user?.id) {
+      setCreatorCampaigns([]);
+      setCreatorCampaignsOwnerId(null);
+      return;
+    }
+    const stored = window.localStorage.getItem(`creatorCampaigns:${user.id}`);
+    setCreatorCampaigns(stored ? (JSON.parse(stored) as CreatorCampaign[]) : []);
+    setCreatorCampaignsOwnerId(user.id);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!user?.id || creatorCampaignsOwnerId !== user.id) return;
+    window.localStorage.setItem(`creatorCampaigns:${user.id}`, JSON.stringify(creatorCampaigns));
+  }, [creatorCampaigns, user?.id, creatorCampaignsOwnerId]);
 
   const fetchUser = useCallback(async (preferredRole?: UserRole) => {
     try {
@@ -239,6 +249,8 @@ export default function App() {
 
   const handleLogout = async () => {
     await authLogout();
+    setCreatorCampaigns([]);
+    setCreatorCampaignsOwnerId(null);
     setUser(null);
     setCurrentPage('landing');
     addToast('Logged out successfully', 'info');
