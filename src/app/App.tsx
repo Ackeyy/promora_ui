@@ -187,25 +187,28 @@ export default function App() {
     }
   };
 
-  const handleRoleToggle = () => {
+  const handleRoleSwitch = () => {
     if (!user) return;
     const newRole: UserRole = currentRole === 'creator' ? 'host' : 'creator';
-    if (newRole === 'host' && !user.hostEnabled) {
-      setCurrentPage('host-onboarding');
-      return;
-    }
-    if (newRole === 'creator' && !user.creatorEnabled) {
-      setCurrentPage('creator-onboarding');
-      return;
-    }
     if (user.creatorEnabled && user.hostEnabled) {
       setPendingRole(newRole);
       setToggleConfirmOpen(true);
       return;
     }
-    api.updateMe({ lastRoleUsed: newRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
-    setCurrentRole(newRole);
-    setUser({ ...user, role: newRole });
+  };
+
+  const handleOpenCreatorAccount = () => {
+    setCurrentPage('creator-onboarding');
+  };
+
+  const handleOpenHostAccount = () => {
+    setCurrentPage('host-onboarding');
+  };
+
+  const handleRoleChangeConfirm = (nextRole: UserRole) => {
+    api.updateMe({ lastRoleUsed: nextRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
+    setCurrentRole(nextRole);
+    if (user) setUser({ ...user, role: nextRole });
     setCurrentPage('dashboard');
   };
 
@@ -391,10 +394,14 @@ export default function App() {
               name: user.name,
               avatar: user.avatar,
               role: currentRole,
+              creatorEnabled: user.creatorEnabled,
+              hostEnabled: user.hostEnabled,
             }}
             currentPage={currentPage}
             onNavigate={handleNavigate}
-            onRoleToggle={handleRoleToggle}
+            onRoleSwitch={handleRoleSwitch}
+            onOpenCreatorAccount={handleOpenCreatorAccount}
+            onOpenHostAccount={handleOpenHostAccount}
             onSettings={() => setShowSettings(true)}
             onLogout={handleLogout}
           />
@@ -495,13 +502,9 @@ export default function App() {
                 type="button"
                 className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 onClick={() => {
-                  const nextRole = pendingRole;
-                  api.updateMe({ lastRoleUsed: nextRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
-                  setCurrentRole(nextRole);
-                  if (user) setUser({ ...user, role: nextRole });
+                  handleRoleChangeConfirm(pendingRole);
                   setToggleConfirmOpen(false);
                   setPendingRole(null);
-                  setCurrentPage('dashboard');
                 }}
               >
                 Continue
