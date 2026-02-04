@@ -30,6 +30,9 @@ async function main() {
       userId: admin.id,
       creatorEnabled: true,
       hostEnabled: true,
+      modeType: 'POLYCODE',
+      lastRoleUsed: 'HOST',
+      roleType: 'ADMIN',
       adminEnabled: true,
       onboardingDone: true,
     },
@@ -51,6 +54,9 @@ async function main() {
       userId: host.id,
       hostEnabled: true,
       creatorEnabled: false,
+      modeType: 'HOST',
+      lastRoleUsed: 'HOST',
+      roleType: 'USER',
       onboardingDone: true,
       companyName: 'FashionCo',
       website: 'https://example.com',
@@ -119,70 +125,43 @@ async function main() {
       userId: creator.id,
       creatorEnabled: true,
       hostEnabled: false,
+      modeType: 'CREATOR',
+      lastRoleUsed: 'CREATOR',
+      roleType: 'USER',
       onboardingDone: true,
       creatorPlatforms: ['INSTAGRAM', 'YOUTUBE'],
     },
     update: {},
   });
 
-  await prisma.campaign.deleteMany({});
-
-  await prisma.campaign.createMany({
-    data: [
-      {
-        hostId: host1.id,
-        title: 'Sample with verify',
-        description: 'Showcase our verified host campaign with authentic content and clean visuals.',
-        thumbnail: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=1200&q=80',
-        videoUrl: 'https://youtube.com/watch?v=verified',
-        campaignType: 'product',
-        productType: 'Tech & Gadgets',
-        productLink: 'https://verified-studio.example/product',
-        reviewContent: true,
-        platforms: ['YOUTUBE', 'INSTAGRAM'],
-        platformRates: { youtube: 7500, instagram: 3500 },
-        ratePer1kViewsPaise: 3500,
-        tags: ['Tech', 'Product'],
-        requirements: ['Minimum 5k followers', 'Use product tag', 'Submit within 48 hours'],
-        status: 'ACTIVE',
-        budgetTotalPaise: 15000000,
-        budgetReservedPaise: 2000000,
-        budgetSpentPaise: 3500000,
-        startAt: new Date(),
-        endAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      },
-      {
-        hostId: host2.id,
-        title: 'Sample with unverify',
-        description: 'Launch a creator-first campaign with fresh visuals and honest storytelling.',
-        thumbnail: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=1200&q=80',
-        videoUrl: 'https://youtube.com/watch?v=unverified',
-        campaignType: 'product',
-        productType: 'Fashion & Apparel',
-        productLink: 'https://unverified-media.example/collection',
-        reviewContent: false,
-        platforms: ['INSTAGRAM', 'FACEBOOK'],
-        platformRates: { instagram: 3000, facebook: 3000 },
-        ratePer1kViewsPaise: 3000,
-        tags: ['Fashion', 'Lifestyle'],
-        requirements: ['Show product in natural light', 'Mention campaign hashtag', 'No competing brands'],
-        status: 'ACTIVE',
-        budgetTotalPaise: 9000000,
-        budgetReservedPaise: 1000000,
-        budgetSpentPaise: 2500000,
-        startAt: new Date(),
-        endAt: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
-      },
-    ],
+  const polycodeEmail = process.env.SAMPLE_POLYCODE_EMAIL ?? 'polycode@promora.com';
+  const polycode = await prisma.user.upsert({
+    where: { email: polycodeEmail },
+    create: {
+      email: polycodeEmail,
+      name: 'Polycode User',
+      passwordHash: sampleHash,
+    },
+    update: {},
+  });
+  await prisma.profile.upsert({
+    where: { userId: polycode.id },
+    create: {
+      userId: polycode.id,
+      creatorEnabled: true,
+      hostEnabled: true,
+      modeType: 'POLYCODE',
+      lastRoleUsed: 'CREATOR',
+      roleType: 'USER',
+      onboardingDone: true,
+      creatorPlatforms: ['INSTAGRAM'],
+      companyName: 'Polycode Labs',
+      website: 'https://polycode.example',
+    },
+    update: {},
   });
 
-  console.log('Seed done:', {
-    admin: admin.email,
-    host: host.email,
-    host1: host1.email,
-    host2: host2.email,
-    creator: creator.email,
-  });
+  console.log('Seed done:', { admin: admin.email, host: host.email, creator: creator.email, polycode: polycode.email });
 }
 
 main()

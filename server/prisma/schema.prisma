@@ -64,6 +64,9 @@ model User {
 model Profile {
   id              String   @id @default(cuid())
   userId          String   @unique
+  roleType        RoleType @default(USER)
+  modeType        ModeType @default(CREATOR)
+  lastRoleUsed    ModeRole?
   creatorEnabled  Boolean  @default(false)
   hostEnabled     Boolean  @default(false)
   adminEnabled    Boolean  @default(false)
@@ -76,6 +79,22 @@ model Profile {
   hostBusinessType String?
   creatorHandles  Json?
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum RoleType {
+  ADMIN
+  USER
+}
+
+enum ModeType {
+  CREATOR
+  HOST
+  POLYCODE
+}
+
+enum ModeRole {
+  CREATOR
+  HOST
 }
 
 model Campaign {
@@ -234,4 +253,13 @@ model AuditLog {
   createdAt  DateTime @default(now())
 
   actor User @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+}
+
+model AuthErrorLog {
+  id        String   @id @default(cuid())
+  email     String?
+  message   String
+  stack     String?  @db.Text
+  context   Json?
+  createdAt DateTime @default(now())
 }

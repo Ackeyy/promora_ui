@@ -9,10 +9,11 @@ import { api } from '@/lib/api';
 
 interface CreatorOnboardingProps {
   onComplete: () => void;
+  onBack: () => void;
   onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export function CreatorOnboarding({ onComplete, onToast }: CreatorOnboardingProps) {
+export function CreatorOnboarding({ onComplete, onBack, onToast }: CreatorOnboardingProps) {
   const [step, setStep] = useState(1);
   const [contentTypes, setContentTypes] = useState<string[]>([]);
   const [platforms, setPlatforms] = useState<string[]>([]);
@@ -272,15 +273,19 @@ export function CreatorOnboarding({ onComplete, onToast }: CreatorOnboardingProp
 
           {/* Navigation */}
           <div className="flex gap-3 mt-8">
-            {step > 1 && (
-              <Button
-                variant="outline"
-                onClick={() => setStep(step - 1)}
-                className="flex-1"
-              >
-                Back
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (step > 1) {
+                  setStep(step - 1);
+                } else {
+                  onBack();
+                }
+              }}
+              className="flex-1"
+            >
+              Back
+            </Button>
             <Button
               onClick={handleNext}
               disabled={!canProceed() && step !== 3}

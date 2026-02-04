@@ -19,6 +19,9 @@ export async function GET() {
         email: user.email,
         name: user.name ?? undefined,
         avatarUrl: user.image ?? undefined,
+        roleType: p.roleType,
+        modeType: p.modeType,
+        lastRoleUsed: p.lastRoleUsed ?? undefined,
         roleMode: {
           creatorEnabled: p.creatorEnabled,
           hostEnabled: p.hostEnabled,
@@ -44,19 +47,22 @@ export async function PATCH(req: Request) {
     const { id } = await requireAuth();
     const body = await req.json();
     const updates: { name?: string; image?: string } = {};
+    const profileUpdates: { companyName?: string; website?: string; lastRoleUsed?: 'CREATOR' | 'HOST' } = {};
     if (body.name != null) updates.name = String(body.name);
     if (body.avatarUrl != null) updates.image = String(body.avatarUrl);
+    if (body.lastRoleUsed === 'CREATOR' || body.lastRoleUsed === 'HOST') {
+      profileUpdates.lastRoleUsed = body.lastRoleUsed;
+    }
     await prisma.user.update({
       where: { id },
       data: updates,
     });
-    if (body.companyName != null || body.website != null) {
+    if (body.companyName != null) profileUpdates.companyName = String(body.companyName);
+    if (body.website != null) profileUpdates.website = String(body.website);
+    if (Object.keys(profileUpdates).length > 0) {
       await prisma.profile.updateMany({
         where: { userId: id },
-        data: {
-          ...(body.companyName != null && { companyName: String(body.companyName) }),
-          ...(body.website != null && { website: String(body.website) }),
-        },
+        data: profileUpdates,
       });
     }
     const user = await prisma.user.findUnique({
@@ -71,6 +77,9 @@ export async function PATCH(req: Request) {
         email: user.email,
         name: user.name ?? undefined,
         avatarUrl: user.image ?? undefined,
+        roleType: p.roleType,
+        modeType: p.modeType,
+        lastRoleUsed: p.lastRoleUsed ?? undefined,
         roleMode: { creatorEnabled: p.creatorEnabled, hostEnabled: p.hostEnabled },
         hostProfile: { companyName: p.companyName ?? undefined, website: p.website ?? undefined, verifiedBadge: p.verifiedBadge },
         creatorHandles: p.creatorHandles ?? undefined,

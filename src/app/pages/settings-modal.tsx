@@ -112,7 +112,7 @@ export function SettingsModal({ isOpen, onClose, user, onUpdateUser }: SettingsM
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Switch roles using the toggle in the sidebar
+                  Switch roles from the settings menu in the sidebar.
                 </p>
               </div>
 
