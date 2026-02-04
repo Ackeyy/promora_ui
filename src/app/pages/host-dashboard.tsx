@@ -19,38 +19,24 @@ export function HostDashboard({ onCampaignClick, onCreateCampaign, onManageCampa
   const [selectedFundCampaign, setSelectedFundCampaign] = useState('all');
 
   const payouts = {
-    today: 4200,
-    month: 68500,
-    year: 485000,
-    total: 1850000,
+    today: 0,
+    month: 0,
+    year: 0,
+    total: 0,
   };
 
-  const campaigns = [
-    {
-      id: '1',
-      name: 'Summer Fashion Collection 2026',
-      thumbnail: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80',
-      budget: 100000,
-      spent: 65000,
-      reserved: 15000,
-      views: 1300000,
-      creators: 45,
-      status: 'active',
-      platforms: ['IG', 'YT'],
-    },
-    {
-      id: '2',
-      name: 'Tech Gadget Launch Campaign',
-      thumbnail: 'https://images.unsplash.com/photo-1519558260268-cde7e03a0152?w=400&q=80',
-      budget: 200000,
-      spent: 120000,
-      reserved: 30000,
-      views: 1700000,
-      creators: 62,
-      status: 'active',
-      platforms: ['YT', 'FB'],
-    },
-  ];
+  const campaigns: Array<{
+    id: string;
+    name: string;
+    thumbnail: string;
+    budget: number;
+    spent: number;
+    reserved: number;
+    views: number;
+    creators: number;
+    status: 'active';
+    platforms: string[];
+  }> = [];
 
   const totalFundsLeft = campaigns.reduce((acc, c) => acc + (c.budget - c.spent - c.reserved), 0);
 
@@ -126,18 +112,18 @@ export function HostDashboard({ onCampaignClick, onCreateCampaign, onManageCampa
 
         <StatCard
           title="Total Views"
-          value="3M"
+          value="0"
           subtitle="Across all campaigns"
           icon={<Eye className="h-6 w-6 text-primary" />}
-          trend={{ value: 18, direction: 'up' }}
+          trend={{ value: 0, direction: 'up' }}
         />
 
         <StatCard
           title="Total Creators"
-          value="107"
+          value="0"
           subtitle="Participating creators"
           icon={<Users className="h-6 w-6 text-primary" />}
-          trend={{ value: 5, direction: 'up' }}
+          trend={{ value: 0, direction: 'up' }}
         />
       </div>
 

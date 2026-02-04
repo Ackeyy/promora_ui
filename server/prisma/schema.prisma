@@ -226,3 +226,12 @@ model AuditLog {
 
   actor User @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
 }
+
+model AuthErrorLog {
+  id        String   @id @default(cuid())
+  email     String?
+  message   String
+  stack     String?  @db.Text
+  context   Json?
+  createdAt DateTime @default(now())
+}

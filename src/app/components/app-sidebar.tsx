@@ -28,7 +28,7 @@ export function AppSidebar({ user, currentPage, onNavigate, onRoleToggle, onSett
     <motion.div
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="w-64 h-screen bg-sidebar border-r border-sidebar-border flex flex-col"
+      className="w-64 h-screen shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col overflow-hidden"
     >
       {/* User Profile */}
       <div className="p-6 border-b border-sidebar-border">

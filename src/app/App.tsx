@@ -55,6 +55,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [redirectAfterAuth, setRedirectAfterAuth] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { toasts, addToast, removeToast } = useToast();
 
   const fetchUser = useCallback(async (preferredRole?: UserRole) => {
@@ -78,10 +79,22 @@ export default function App() {
     fetchUser().finally(() => setAuthChecked(true));
   }, []);
 
+  useEffect(() => {
+    if (authChecked && user?.isOnboarded && currentPage === 'landing') {
+      setCurrentPage('dashboard');
+    }
+  }, [authChecked, user, currentPage]);
+
   const handleLogin = async (email: string, password: string) => {
+    setLoginError(null);
     const result = await authLogin(email, password);
     if (!result.ok) {
-      addToast(result.error ?? 'Login failed', 'error');
+      const message = result.errorCode === 'USER_NOT_FOUND'
+        ? "User doesn't exist."
+        : result.errorCode === 'INVALID_PASSWORD'
+          ? "User's password is wrong."
+          : 'Unexpected error. Try again.';
+      setLoginError(message);
       return;
     }
     const u = await fetchUser();
@@ -197,7 +210,14 @@ export default function App() {
       return <LandingPage onNavigate={setCurrentPage} />;
     }
     if (currentPage === 'login') {
-      return <LoginPage onLogin={handleLogin} onNavigate={setCurrentPage} />;
+      return (
+        <LoginPage
+          onLogin={handleLogin}
+          onNavigate={setCurrentPage}
+          errorMessage={loginError}
+          onClearError={() => setLoginError(null)}
+        />
+      );
     }
     if (currentPage === 'signup') {
       return <SignupPage onSignup={handleSignup} onNavigate={setCurrentPage} />;
@@ -316,8 +336,8 @@ export default function App() {
   const showSidebar = isAuthenticated && !['creator-onboarding', 'host-onboarding'].includes(currentPage);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="flex">
+    <div className="h-screen bg-background text-foreground overflow-hidden">
+      <div className="flex h-full">
         {showSidebar && user && (
           <AppSidebar
             user={{
@@ -333,7 +353,7 @@ export default function App() {
           />
         )}
 
-        <main className="flex-1 min-h-screen">
+        <main className="flex-1 h-full overflow-y-auto">
           {renderPage()}
         </main>
       </div>
