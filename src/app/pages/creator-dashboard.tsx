@@ -345,7 +345,7 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
       )}
 
       {/* Footer Credit */}
-      <div className="mt-20 text-center text-sm text-muted-foreground">
+      <div className="mt-125 text-center text-sm text-muted-foreground">
         © Promora 2026
       </div>
     </div>
