@@ -15,6 +15,7 @@ import { CampaignManage } from '@/app/pages/campaign-manage';
 import { CreatorStats } from '@/app/pages/creator-stats';
 import { HostStats } from '@/app/pages/host-stats';
 import { SettingsModal } from '@/app/pages/settings-modal';
+import { Modal } from '@/app/components/modal';
 import { api } from '@/lib/api';
 import { login as authLogin, logout as authLogout } from '@/lib/auth';
 import type { UserProfile } from '@/lib/types';
@@ -30,12 +31,24 @@ interface User {
   role: UserRole;
   isOnboarded: boolean;
   isHostVerified?: boolean;
+  creatorEnabled: boolean;
+  hostEnabled: boolean;
+  lastRoleUsed?: UserRole;
 }
 
 function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
+  const lastRole = p.lastRoleUsed === 'HOST' ? 'host' : p.lastRoleUsed === 'CREATOR' ? 'creator' : undefined;
+  const modeRole: UserRole | undefined =
+    p.modeType === 'HOST'
+      ? 'host'
+      : p.modeType === 'CREATOR'
+        ? 'creator'
+        : undefined;
+  const polycodeRole = preferredRole ?? lastRole ?? 'creator';
   const role: UserRole =
-    preferredRole ??
-    (p.roleMode.creatorEnabled ? 'creator' : p.roleMode.hostEnabled ? 'host' : 'creator');
+    p.modeType === 'POLYCODE'
+      ? polycodeRole
+      : modeRole ?? (p.roleMode.hostEnabled ? 'host' : 'creator');
   return {
     id: p.id,
     name: p.name ?? p.email,
@@ -44,6 +57,9 @@ function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
     role,
     isOnboarded: p.onboardingComplete,
     isHostVerified: p.hostProfile?.verifiedBadge,
+    creatorEnabled: p.roleMode.creatorEnabled,
+    hostEnabled: p.roleMode.hostEnabled,
+    lastRoleUsed: lastRole,
   };
 }
 
@@ -55,12 +71,19 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [redirectAfterAuth, setRedirectAfterAuth] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [roleChoiceOpen, setRoleChoiceOpen] = useState(false);
+  const [roleChoiceUser, setRoleChoiceUser] = useState<User | null>(null);
+  const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false);
+  const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const { toasts, addToast, removeToast } = useToast();
 
   const fetchUser = useCallback(async (preferredRole?: UserRole) => {
     try {
       const res = await api.getMe();
-      const u = profileToUser(res.data, preferredRole ?? currentRole);
+      const u = profileToUser(res.data, preferredRole);
       setUser(u);
       setCurrentRole(u.role);
       return u;
@@ -68,7 +91,7 @@ export default function App() {
       setUser(null);
       return null;
     }
-  }, [currentRole]);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
@@ -78,28 +101,52 @@ export default function App() {
     fetchUser().finally(() => setAuthChecked(true));
   }, []);
 
-  const handleLogin = async (email: string, password: string) => {
-    const result = await authLogin(email, password);
-    if (!result.ok) {
-      addToast(result.error ?? 'Login failed', 'error');
-      return;
+  useEffect(() => {
+    if (authChecked && user?.isOnboarded && currentPage === 'landing') {
+      setCurrentPage('dashboard');
     }
-    const u = await fetchUser();
-    if (u) {
-      setCurrentRole(u.role);
-      if (redirectAfterAuth) {
-        setCurrentPage(redirectAfterAuth as Page);
-        setRedirectAfterAuth(null);
-      } else {
-        setCurrentPage('dashboard');
+  }, [authChecked, user, currentPage]);
+
+  const handleLogin = async (email: string, password: string) => {
+    setLoginError(null);
+    setIsLoggingIn(true);
+    try {
+      const result = await authLogin(email, password);
+      if (!result.ok) {
+        const message = result.errorCode === 'USER_NOT_FOUND'
+          ? "User doesn't exist."
+          : result.errorCode === 'INVALID_PASSWORD'
+            ? "User's password is wrong."
+            : 'Unexpected error. Try again.';
+        setLoginError(message);
+        return;
       }
-      addToast('Welcome back!', 'success');
-    } else {
-      addToast('Could not load profile', 'error');
+      const u = await fetchUser();
+      if (u) {
+        if (u.creatorEnabled && u.hostEnabled) {
+          setRoleChoiceUser(u);
+          setRoleChoiceOpen(true);
+          addToast('Choose how you want to proceed.', 'info');
+          return;
+        }
+        setCurrentRole(u.role);
+        if (redirectAfterAuth) {
+          setCurrentPage(redirectAfterAuth as Page);
+          setRedirectAfterAuth(null);
+        } else {
+          setCurrentPage('dashboard');
+        }
+        addToast('Welcome back!', 'success');
+      } else {
+        addToast('Could not load profile', 'error');
+      }
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
   const handleSignup = async (email: string, password: string, role: UserRole) => {
+    setIsSigningUp(true);
     try {
       await api.signup({ email, password, role });
       const result = await authLogin(email, password);
@@ -122,6 +169,8 @@ export default function App() {
     } catch (e: unknown) {
       const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Signup failed';
       addToast(msg, 'error');
+    } finally {
+      setIsSigningUp(false);
     }
   };
 
@@ -141,12 +190,20 @@ export default function App() {
   const handleRoleToggle = () => {
     if (!user) return;
     const newRole: UserRole = currentRole === 'creator' ? 'host' : 'creator';
-    if (newRole === 'host' && !user.isHostVerified) {
+    if (newRole === 'host' && !user.hostEnabled) {
       setCurrentPage('host-onboarding');
-      setUser({ ...user, role: newRole });
-      setCurrentRole(newRole);
       return;
     }
+    if (newRole === 'creator' && !user.creatorEnabled) {
+      setCurrentPage('creator-onboarding');
+      return;
+    }
+    if (user.creatorEnabled && user.hostEnabled) {
+      setPendingRole(newRole);
+      setToggleConfirmOpen(true);
+      return;
+    }
+    api.updateMe({ lastRoleUsed: newRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
     setCurrentRole(newRole);
     setUser({ ...user, role: newRole });
     setCurrentPage('dashboard');
@@ -197,10 +254,18 @@ export default function App() {
       return <LandingPage onNavigate={setCurrentPage} />;
     }
     if (currentPage === 'login') {
-      return <LoginPage onLogin={handleLogin} onNavigate={setCurrentPage} />;
+      return (
+        <LoginPage
+          onLogin={handleLogin}
+          onNavigate={setCurrentPage}
+          errorMessage={loginError}
+          onClearError={() => setLoginError(null)}
+          isLoading={isLoggingIn}
+        />
+      );
     }
     if (currentPage === 'signup') {
-      return <SignupPage onSignup={handleSignup} onNavigate={setCurrentPage} />;
+      return <SignupPage onSignup={handleSignup} onNavigate={setCurrentPage} isLoading={isSigningUp} />;
     }
 
     // Onboarding
@@ -208,6 +273,7 @@ export default function App() {
       return (
         <CreatorOnboarding
           onComplete={handleOnboardingComplete}
+          onBack={() => setCurrentPage('dashboard')}
           onToast={addToast}
         />
       );
@@ -222,6 +288,7 @@ export default function App() {
               addToast('Host onboarding completed!', 'success');
             }
           }}
+          onBack={() => setCurrentPage('dashboard')}
           onToast={addToast}
         />
       );
@@ -316,8 +383,8 @@ export default function App() {
   const showSidebar = isAuthenticated && !['creator-onboarding', 'host-onboarding'].includes(currentPage);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="flex">
+    <div className="h-screen bg-background text-foreground overflow-hidden">
+      <div className="flex h-full">
         {showSidebar && user && (
           <AppSidebar
             user={{
@@ -333,7 +400,7 @@ export default function App() {
           />
         )}
 
-        <main className="flex-1 min-h-screen">
+        <main className="flex-1 h-full overflow-y-auto">
           {renderPage()}
         </main>
       </div>
@@ -348,6 +415,101 @@ export default function App() {
       )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {roleChoiceOpen && roleChoiceUser && (
+        <Modal
+          isOpen={roleChoiceOpen}
+          onClose={() => {
+            setRoleChoiceOpen(false);
+            setRoleChoiceUser(null);
+          }}
+          title="Continue as"
+          size="sm"
+        >
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Choose which dashboard you want to use for this session.
+            </p>
+            <div className="grid gap-3">
+              <button
+                type="button"
+                className="w-full rounded-lg border border-border bg-background px-4 py-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
+                onClick={() => {
+                  api.updateMe({ lastRoleUsed: 'CREATOR' }).catch(() => null);
+                  setCurrentRole('creator');
+                  setUser({ ...roleChoiceUser, role: 'creator' });
+                  setRoleChoiceOpen(false);
+                  setRoleChoiceUser(null);
+                  setCurrentPage('dashboard');
+                }}
+              >
+                <span className="block font-semibold">Creator</span>
+                <span className="block text-xs text-muted-foreground">Promote campaigns and track earnings.</span>
+              </button>
+              <button
+                type="button"
+                className="w-full rounded-lg border border-border bg-background px-4 py-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
+                onClick={() => {
+                  api.updateMe({ lastRoleUsed: 'HOST' }).catch(() => null);
+                  setCurrentRole('host');
+                  setUser({ ...roleChoiceUser, role: 'host' });
+                  setRoleChoiceOpen(false);
+                  setRoleChoiceUser(null);
+                  setCurrentPage('dashboard');
+                }}
+              >
+                <span className="block font-semibold">Host</span>
+                <span className="block text-xs text-muted-foreground">Manage campaigns and creator payouts.</span>
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {toggleConfirmOpen && pendingRole && (
+        <Modal
+          isOpen={toggleConfirmOpen}
+          onClose={() => {
+            setToggleConfirmOpen(false);
+            setPendingRole(null);
+          }}
+          title="Switch role?"
+          size="sm"
+        >
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              You&apos;re about to switch to the {pendingRole} dashboard. Continue?
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="flex-1 rounded-lg border border-border bg-background px-4 py-2 text-sm transition-colors hover:border-primary/60 hover:bg-primary/5"
+                onClick={() => {
+                  setToggleConfirmOpen(false);
+                  setPendingRole(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                onClick={() => {
+                  const nextRole = pendingRole;
+                  api.updateMe({ lastRoleUsed: nextRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
+                  setCurrentRole(nextRole);
+                  if (user) setUser({ ...user, role: nextRole });
+                  setToggleConfirmOpen(false);
+                  setPendingRole(null);
+                  setCurrentPage('dashboard');
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

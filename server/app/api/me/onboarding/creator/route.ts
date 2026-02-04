@@ -15,12 +15,16 @@ export async function POST(req: NextRequest) {
     const parsed = bodySchema.safeParse(body);
     if (!parsed.success) return errorResponse(parsed.error.message, 400);
     const { platforms, contentTypes } = parsed.data;
+    const profile = await prisma.profile.findUnique({ where: { userId: id } });
+    const modeType = profile?.hostEnabled ? 'POLYCODE' : 'CREATOR';
     await prisma.profile.updateMany({
       where: { userId: id },
       data: {
         creatorEnabled: true,
         creatorPlatforms: platforms,
         creatorContentTypes: contentTypes ?? [],
+        modeType,
+        lastRoleUsed: 'CREATOR',
         onboardingDone: true,
       },
     });

@@ -16,6 +16,8 @@ export async function POST(req: NextRequest) {
     const parsed = bodySchema.safeParse(body);
     if (!parsed.success) return errorResponse(parsed.error.message, 400);
     const { companyName, website, businessType } = parsed.data;
+    const profile = await prisma.profile.findUnique({ where: { userId: id } });
+    const modeType = profile?.creatorEnabled ? 'POLYCODE' : 'HOST';
     await prisma.profile.updateMany({
       where: { userId: id },
       data: {
@@ -23,6 +25,8 @@ export async function POST(req: NextRequest) {
         companyName,
         website: website || undefined,
         hostBusinessType: businessType,
+        modeType,
+        lastRoleUsed: 'HOST',
         onboardingDone: true,
       },
     });

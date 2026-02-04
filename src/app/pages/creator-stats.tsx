@@ -8,33 +8,16 @@ import { useState } from 'react';
 export function CreatorStats() {
   const [period, setPeriod] = useState('month');
 
-  const earningsData = [
-    { date: 'Jan 1', earnings: 1200 },
-    { date: 'Jan 8', earnings: 1800 },
-    { date: 'Jan 15', earnings: 2200 },
-    { date: 'Jan 22', earnings: 2800 },
-    { date: 'Jan 29', earnings: 3500 },
-    { date: 'Feb 5', earnings: 4200 },
-  ];
+  const earningsData: Array<{ date: string; earnings: number }> = [];
 
-  const viewsData = [
-    { date: 'Week 1', youtube: 45000, instagram: 32000, facebook: 18000 },
-    { date: 'Week 2', youtube: 52000, instagram: 38000, facebook: 22000 },
-    { date: 'Week 3', youtube: 48000, instagram: 42000, facebook: 25000 },
-    { date: 'Week 4', youtube: 61000, instagram: 48000, facebook: 28000 },
-  ];
+  const viewsData: Array<{ date: string; youtube: number; instagram: number; facebook: number }> = [];
 
-  const campaignPerformance = [
-    { name: 'Summer Fashion', earnings: 12500, views: 250000, approval: 95 },
-    { name: 'Tech Gadget', earnings: 8400, views: 120000, approval: 88 },
-    { name: 'Fitness Challenge', earnings: 6750, views: 150000, approval: 92 },
-    { name: 'Beauty Products', earnings: 5200, views: 104000, approval: 90 },
-  ];
+  const campaignPerformance: Array<{ name: string; earnings: number; views: number; approval: number }> = [];
 
   const approvalStats = [
-    { name: 'Approved', value: 142, color: '#10b981' },
-    { name: 'Pending', value: 18, color: '#f59e0b' },
-    { name: 'Rejected', value: 6, color: '#ef4444' },
+    { name: 'Approved', value: 0, color: '#10b981' },
+    { name: 'Pending', value: 0, color: '#f59e0b' },
+    { name: 'Rejected', value: 0, color: '#ef4444' },
   ];
 
   return (
@@ -66,10 +49,10 @@ export function CreatorStats() {
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {[
-          { label: 'Total Earnings', value: '₹45,200', icon: <DollarSign className="h-5 w-5" />, trend: '+12%' },
-          { label: 'Total Views', value: '520k', icon: <Eye className="h-5 w-5" />, trend: '+8%' },
-          { label: 'Approval Rate', value: '92%', icon: <CheckCircle className="h-5 w-5" />, trend: '+3%' },
-          { label: 'Active Campaigns', value: '3', icon: <TrendingUp className="h-5 w-5" />, trend: '+1' },
+          { label: 'Total Earnings', value: '₹0', icon: <DollarSign className="h-5 w-5" />, trend: '0%' },
+          { label: 'Total Views', value: '0', icon: <Eye className="h-5 w-5" />, trend: '0%' },
+          { label: 'Approval Rate', value: '0%', icon: <CheckCircle className="h-5 w-5" />, trend: '0%' },
+          { label: 'Active Campaigns', value: '0', icon: <TrendingUp className="h-5 w-5" />, trend: '0' },
         ].map((stat, i) => (
           <motion.div
             key={i}
