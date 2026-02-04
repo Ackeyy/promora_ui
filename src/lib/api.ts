@@ -11,6 +11,8 @@ import type {
 
 export const api = {
   getMe: () => apiFetch<ApiResponse<UserProfile>>('/api/me'),
+  updateMe: (payload: { name?: string; avatarUrl?: string; companyName?: string; website?: string; lastRoleUsed?: 'CREATOR' | 'HOST' }) =>
+    apiFetch<ApiResponse<UserProfile>>('/api/me', { method: 'PATCH', body: payload }),
   submitCreatorOnboarding: (payload: { platforms: string[]; contentTypes?: string[] }) =>
     apiFetch<ApiResponse<{ ok: boolean }>>('/api/me/onboarding/creator', { method: 'POST', body: payload }),
   submitHostOnboarding: (payload: { companyName: string; website?: string; businessType?: string }) =>

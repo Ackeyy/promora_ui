@@ -64,6 +64,9 @@ model User {
 model Profile {
   id              String   @id @default(cuid())
   userId          String   @unique
+  roleType        RoleType @default(USER)
+  modeType        ModeType @default(CREATOR)
+  lastRoleUsed    ModeRole?
   creatorEnabled  Boolean  @default(false)
   hostEnabled     Boolean  @default(false)
   adminEnabled    Boolean  @default(false)
@@ -75,6 +78,22 @@ model Profile {
   creatorContentTypes String[]
   hostBusinessType String?
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum RoleType {
+  ADMIN
+  USER
+}
+
+enum ModeType {
+  CREATOR
+  HOST
+  POLYCODE
+}
+
+enum ModeRole {
+  CREATOR
+  HOST
 }
 
 model Campaign {

@@ -28,6 +28,9 @@ async function main() {
       userId: admin.id,
       creatorEnabled: true,
       hostEnabled: true,
+      modeType: 'POLYCODE',
+      lastRoleUsed: 'HOST',
+      roleType: 'ADMIN',
       adminEnabled: true,
       onboardingDone: true,
     },
@@ -49,6 +52,9 @@ async function main() {
       userId: host.id,
       hostEnabled: true,
       creatorEnabled: false,
+      modeType: 'HOST',
+      lastRoleUsed: 'HOST',
+      roleType: 'USER',
       onboardingDone: true,
       companyName: 'FashionCo',
       website: 'https://example.com',
@@ -71,13 +77,43 @@ async function main() {
       userId: creator.id,
       creatorEnabled: true,
       hostEnabled: false,
+      modeType: 'CREATOR',
+      lastRoleUsed: 'CREATOR',
+      roleType: 'USER',
       onboardingDone: true,
       creatorPlatforms: ['INSTAGRAM', 'YOUTUBE'],
     },
     update: {},
   });
 
-  console.log('Seed done:', { admin: admin.email, host: host.email, creator: creator.email });
+  const polycodeEmail = process.env.SAMPLE_POLYCODE_EMAIL ?? 'polycode@promora.com';
+  const polycode = await prisma.user.upsert({
+    where: { email: polycodeEmail },
+    create: {
+      email: polycodeEmail,
+      name: 'Polycode User',
+      passwordHash: sampleHash,
+    },
+    update: {},
+  });
+  await prisma.profile.upsert({
+    where: { userId: polycode.id },
+    create: {
+      userId: polycode.id,
+      creatorEnabled: true,
+      hostEnabled: true,
+      modeType: 'POLYCODE',
+      lastRoleUsed: 'CREATOR',
+      roleType: 'USER',
+      onboardingDone: true,
+      creatorPlatforms: ['INSTAGRAM'],
+      companyName: 'Polycode Labs',
+      website: 'https://polycode.example',
+    },
+    update: {},
+  });
+
+  console.log('Seed done:', { admin: admin.email, host: host.email, creator: creator.email, polycode: polycode.email });
 }
 
 main()
