@@ -82,75 +82,74 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <h1 className="text-4xl font-bold mb-2">Creator Dashboard</h1>
-        <p className="text-muted-foreground">Track your earnings and manage campaigns</p>
-      </motion.div>
+    <div className="p-8 max-w-7xl mx-auto min-h-screen flex flex-col">
+      <div className="flex-1">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-4xl font-bold mb-2">Creator Dashboard</h1>
+          <p className="text-muted-foreground">Track your earnings and manage campaigns</p>
+        </motion.div>
 
-      {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="relative h-full">
-          <Card className="h-full hover:shadow-xl hover:shadow-primary/10 transition-all duration-300">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Earnings</CardTitle>
-                <Select value={earningsPeriod} onValueChange={setEarningsPeriod}>
-                  <SelectTrigger className="w-28 h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="month">Month</SelectItem>
-                    <SelectItem value="year">Year</SelectItem>
-                    <SelectItem value="total">Total</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent className="flex h-full flex-col justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-lg bg-gradient-to-br from-primary to-chart-2">
-                  <DollarSign className="h-6 w-6 text-white" />
+        {/* Top Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="relative">
+            <Card className="hover:shadow-xl hover:shadow-primary/10 transition-all duration-300">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Earnings</CardTitle>
+                  <Select value={earningsPeriod} onValueChange={setEarningsPeriod}>
+                    <SelectTrigger className="w-28 h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">Today</SelectItem>
+                      <SelectItem value="month">Month</SelectItem>
+                      <SelectItem value="year">Year</SelectItem>
+                      <SelectItem value="total">Total</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <motion.p
-                    key={earningsPeriod}
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-3xl font-bold"
-                  >
-                    ₹{earnings[earningsPeriod as keyof typeof earnings].toLocaleString()}
-                  </motion.p>
-                  <p className="text-sm text-muted-foreground">From verified views</p>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-primary to-chart-2">
+                    <DollarSign className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <motion.p
+                      key={earningsPeriod}
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="text-3xl font-bold"
+                    >
+                      ₹{earnings[earningsPeriod as keyof typeof earnings].toLocaleString()}
+                    </motion.p>
+                    <p className="text-sm text-muted-foreground">From verified views</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
+
+          <StatCard
+            title="Campaigns Joined"
+            value={joinedCampaigns.length}
+            subtitle="Active campaigns"
+            icon={<Target className="h-6 w-6 text-primary" />}
+          />
+
+          <StatCard
+            title="Total Views"
+            value="0"
+            subtitle="Across all campaigns"
+            icon={<Eye className="h-6 w-6 text-primary" />}
+            trend={{ value: 0, direction: 'up' }}
+          />
         </div>
-
-        <StatCard
-          title="Campaigns Joined"
-          value={joinedCampaigns.length}
-          subtitle="Active campaigns"
-          icon={<Target className="h-6 w-6 text-primary" />}
-          className="h-full"
-        />
-
-        <StatCard
-          title="Total Views"
-          value="0"
-          subtitle="Across all campaigns"
-          icon={<Eye className="h-6 w-6 text-primary" />}
-          trend={{ value: 0, direction: 'up' }}
-          className="h-full"
-        />
-      </div>
 
       {/* Joined Campaigns */}
       <motion.div
@@ -346,8 +345,10 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
         </motion.div>
       )}
 
+      </div>
+
       {/* Footer Credit */}
-      <div className="mt-125 text-center text-sm text-muted-foreground">
+      <div className="mt-auto pt-[125px] text-center text-sm text-muted-foreground">
         © Promora 2026
       </div>
     </div>
