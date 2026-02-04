@@ -1,18 +1,7 @@
-import { Home, Target, BarChart3, Settings, LogOut, User, ChevronRight, ArrowLeftRight, UserPlus, HelpCircle, Sun, Moon } from 'lucide-react';
+import { Home, Target, BarChart3, Settings, LogOut, User, ChevronRight, ArrowLeftRight, UserPlus, HelpCircle, Sun, Moon, Search, Menu } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/app/components/ui/avatar';
 import { Button } from '@/app/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from '@/app/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
 import { motion } from 'motion/react';
 import { useState } from 'react';
 
@@ -49,7 +38,7 @@ export function AppSidebar({
   theme,
   onLogout,
 }: AppSidebarProps) {
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [menuAction, setMenuAction] = useState('');
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'campaigns', label: 'Campaigns', icon: Target },
@@ -61,6 +50,37 @@ export function AppSidebar({
     : user.role === 'creator'
       ? 'Open host account?'
       : 'Open creator account?';
+  const handleMenuAction = (value: string) => {
+    switch (value) {
+      case 'settings':
+        onSettings();
+        break;
+      case 'support':
+        onSupport();
+        break;
+      case 'theme-light':
+        onThemeChange('light');
+        break;
+      case 'theme-dark':
+        onThemeChange('dark');
+        break;
+      case 'role':
+        if (isPolycode) {
+          onRoleSwitch();
+        } else if (user.role === 'creator') {
+          onOpenHostAccount();
+        } else {
+          onOpenCreatorAccount();
+        }
+        break;
+      case 'logout':
+        onLogout();
+        break;
+      default:
+        break;
+    }
+    setMenuAction('');
+  };
 
   return (
     <motion.div
@@ -68,32 +88,18 @@ export function AppSidebar({
       animate={{ x: 0, opacity: 1 }}
       className="w-64 h-screen shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col overflow-hidden"
     >
-      {/* User Profile */}
       <div className="p-6 border-b border-sidebar-border">
-        <div className="flex items-center gap-3 mb-4">
-          <Avatar className="h-12 w-12 ring-2 ring-primary/20">
-            <AvatarImage src={user.avatar} />
-            <AvatarFallback className="bg-gradient-to-br from-primary to-chart-2">
-              {user.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <p className="font-medium text-sidebar-foreground">{user.name}</p>
-            <p className="text-sm text-muted-foreground capitalize">{user.role}</p>
+        <div className="flex items-center gap-2 text-sidebar-foreground">
+          <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+            <div className="h-4 w-4 rounded-sm bg-primary" />
           </div>
-        </div>
-
-        <div className="flex items-center justify-between p-3 bg-sidebar-accent rounded-lg">
-          <div className="flex items-center gap-2 text-sm">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span className="capitalize">{user.role}</span>
-          </div>
-          <span className="text-xs text-muted-foreground">Current mode</span>
+          <span className="text-lg font-semibold tracking-tight">Promora</span>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-3">
+        <p className="px-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Main</p>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -102,110 +108,86 @@ export function AppSidebar({
             <motion.button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              whileHover={{ x: 4 }}
+              whileHover={{ x: 3 }}
               whileTap={{ scale: 0.98 }}
-              className={`
-                w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors
-                ${isActive 
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent'
-                }
-              `}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
+                isActive
+                  ? 'bg-sidebar-accent text-sidebar-foreground shadow-[0_0_0_1px_rgba(255,255,255,0.08)]'
+                  : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground'
+              }`}
             >
-              <Icon className="h-5 w-5" />
-              <span>{item.label}</span>
-              {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+              <div className="h-8 w-8 rounded-xl bg-sidebar-accent/60 flex items-center justify-center">
+                <Icon className="h-4 w-4 text-sidebar-foreground" />
+              </div>
+              <span className="text-sm font-medium">{item.label}</span>
+              {isActive && <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />}
             </motion.button>
           );
         })}
 
-        <div className="pt-4">
-          <DropdownMenu open={settingsOpen} onOpenChange={setSettingsOpen}>
-            <div
-              onMouseEnter={() => setSettingsOpen(true)}
-              onMouseLeave={() => setSettingsOpen(false)}
-            >
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-3"
-                >
-                  <Settings className="h-5 w-5" />
-                  Settings
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="right"
-                align="start"
-                className="w-56"
-                onMouseEnter={() => setSettingsOpen(true)}
-                onMouseLeave={() => setSettingsOpen(false)}
-              >
-                <DropdownMenuItem onClick={onSettings}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Account settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={onSupport}>
-                  <HelpCircle className="mr-2 h-4 w-4" />
-                  Help & support
-                </DropdownMenuItem>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    {theme === 'dark' ? <Moon className="mr-2 h-4 w-4" /> : <Sun className="mr-2 h-4 w-4" />}
-                    Theme
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-40">
-                    <DropdownMenuRadioGroup value={theme} onValueChange={(value) => onThemeChange(value as 'dark' | 'light')}>
-                      <DropdownMenuRadioItem value="light">
-                        <Sun className="mr-2 h-4 w-4" />
-                        Light
-                      </DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="dark">
-                        <Moon className="mr-2 h-4 w-4" />
-                        Dark
-                      </DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={isPolycode ? onRoleSwitch : user.role === 'creator' ? onOpenHostAccount : onOpenCreatorAccount}
-                >
-                  {isPolycode ? <ArrowLeftRight className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                  {roleActionLabel}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+        <div className="pt-3 space-y-3">
+          <div className="flex items-center justify-between px-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <span>Your campaigns</span>
+            <Search className="h-3.5 w-3.5" />
+          </div>
+          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-sidebar-accent/70 text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+            <div className="h-8 w-8 rounded-lg bg-sidebar-accent flex items-center justify-center text-xs font-semibold">
+              {user.name.charAt(0).toUpperCase()}
             </div>
-          </DropdownMenu>
+            <span className="text-sm font-medium truncate">Active campaigns</span>
+          </button>
+          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl border border-sidebar-border text-sidebar-foreground/80 hover:bg-sidebar-accent/80 transition-colors">
+            <div className="h-8 w-8 rounded-lg bg-sidebar-accent/60 flex items-center justify-center text-base font-semibold">
+              +
+            </div>
+            <span className="text-sm font-medium">New campaign</span>
+          </button>
         </div>
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border space-y-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-xs text-muted-foreground"
-          onClick={onLogout}
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          Logout
-        </Button>
-        <div className="text-xs text-center text-muted-foreground space-y-1">
-          <p>© 2026 Promora</p>
-          <div className="flex justify-center gap-2 text-[10px]">
-            <button className="hover:text-primary transition-colors">Terms</button>
-            <span>•</span>
-            <button className="hover:text-primary transition-colors">Privacy</button>
-            <span>•</span>
-            <button className="hover:text-primary transition-colors">Support</button>
+      <div className="p-4 border-t border-sidebar-border space-y-3">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-sidebar-accent/80">
+          <Avatar className="h-9 w-9">
+            <AvatarImage src={user.avatar} />
+            <AvatarFallback className="bg-gradient-to-br from-primary to-chart-2">
+              {user.name.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-sidebar-foreground truncate">{user.name}</p>
+            <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
           </div>
         </div>
+
+        <Select value={menuAction} onValueChange={handleMenuAction}>
+          <SelectTrigger className="w-full justify-start gap-3 border border-sidebar-border bg-transparent text-sidebar-foreground/80">
+            <Menu className="h-4 w-4" />
+            <SelectValue placeholder="Menu" />
+          </SelectTrigger>
+          <SelectContent side="top" align="start">
+            <SelectItem value="settings">
+              <Settings className="h-4 w-4" />
+              Account settings
+            </SelectItem>
+            <SelectItem value="support">
+              <HelpCircle className="h-4 w-4" />
+              Help & support
+            </SelectItem>
+            <SelectItem value={theme === 'dark' ? 'theme-light' : 'theme-dark'}>
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+            </SelectItem>
+            <SelectItem value="role">
+              {isPolycode ? <ArrowLeftRight className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+              {roleActionLabel}
+            </SelectItem>
+            <SelectItem value="logout">
+              <LogOut className="h-4 w-4" />
+              Log out
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </motion.div>
   );
