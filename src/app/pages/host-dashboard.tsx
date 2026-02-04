@@ -35,10 +35,6 @@ export function HostDashboard({ onCampaignClick, onCreateCampaign, onManageCampa
     views: number;
     creators: number;
     status: 'active';
-<<<<<<< HEAD
-=======
-    platforms: string[];
->>>>>>> codex/implement-backend-logic-for-promora-mvp
   }> = [];
 
   const totalFundsLeft = campaigns.reduce((acc, c) => acc + (c.budget - c.spent - c.reserved), 0);

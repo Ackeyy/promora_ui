@@ -120,17 +120,6 @@ export default function App() {
   useEffect(() => {
     if (authChecked && user?.isOnboarded && currentPage === 'landing') {
       setCurrentPage('dashboard');
-<<<<<<< HEAD
-    }
-  }, [authChecked, user, currentPage]);
-
-  const handleLogin = async (email: string, password: string) => {
-    const result = await authLogin(email, password);
-    if (!result.ok) {
-      addToast(result.error ?? 'Login failed', 'error');
-      return;
-=======
->>>>>>> codex/implement-backend-logic-for-promora-mvp
     }
   }, [authChecked, user, currentPage]);
 

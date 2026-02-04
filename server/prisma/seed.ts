@@ -134,7 +134,6 @@ async function main() {
     update: {},
   });
 
-<<<<<<< HEAD
   await prisma.campaign.deleteMany({});
 
   await prisma.campaign.createMany({
@@ -186,14 +185,6 @@ async function main() {
     ],
   });
 
-  console.log('Seed done:', {
-    admin: admin.email,
-    host: host.email,
-    host1: host1.email,
-    host2: host2.email,
-    creator: creator.email,
-  });
-=======
   const polycodeEmail = process.env.SAMPLE_POLYCODE_EMAIL ?? 'polycode@promora.com';
   const polycode = await prisma.user.upsert({
     where: { email: polycodeEmail },
@@ -221,8 +212,14 @@ async function main() {
     update: {},
   });
 
-  console.log('Seed done:', { admin: admin.email, host: host.email, creator: creator.email, polycode: polycode.email });
->>>>>>> codex/implement-backend-logic-for-promora-mvp
+  console.log('Seed done:', {
+    admin: admin.email,
+    host: host.email,
+    host1: host1.email,
+    host2: host2.email,
+    creator: creator.email,
+    polycode: polycode.email,
+  });
 }
 
 main()
