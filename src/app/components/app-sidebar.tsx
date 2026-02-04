@@ -14,6 +14,7 @@ interface AppSidebarProps {
     hostEnabled: boolean;
   };
   currentPage: string;
+  activeCampaignCount?: number;
   onNavigate: (page: string) => void;
   onRoleSwitch: () => void;
   onOpenCreatorAccount: () => void;
@@ -28,6 +29,7 @@ interface AppSidebarProps {
 export function AppSidebar({
   user,
   currentPage,
+  activeCampaignCount = 0,
   onNavigate,
   onRoleSwitch,
   onOpenCreatorAccount,
@@ -124,6 +126,27 @@ export function AppSidebar({
             </motion.button>
           );
         })}
+
+        {user.role === 'creator' && (
+          <motion.button
+            onClick={() => onNavigate('active-campaigns')}
+            whileHover={{ x: 3 }}
+            whileTap={{ scale: 0.98 }}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
+              currentPage === 'active-campaigns'
+                ? 'bg-sidebar-accent text-sidebar-foreground shadow-[0_0_0_1px_rgba(255,255,255,0.08)]'
+                : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground'
+            }`}
+          >
+            <div className="h-8 w-8 rounded-xl bg-sidebar-accent/60 flex items-center justify-center">
+              <Target className="h-4 w-4 text-sidebar-foreground" />
+            </div>
+            <span className="text-sm font-medium">Active campaigns</span>
+            <span className="ml-auto inline-flex min-w-[28px] items-center justify-center rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">
+              {activeCampaignCount}
+            </span>
+          </motion.button>
+        )}
 
         {user.role === 'host' && (
           <div className="pt-3 space-y-3">

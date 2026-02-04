@@ -12,6 +12,7 @@ import { CampaignDiscover } from '@/app/pages/campaign-discover';
 import { CampaignDetail } from '@/app/pages/campaign-detail';
 import { CampaignCreate } from '@/app/pages/campaign-create';
 import { CampaignManage } from '@/app/pages/campaign-manage';
+import { CreatorActiveCampaigns } from '@/app/pages/creator-active-campaigns';
 import { CreatorStats } from '@/app/pages/creator-stats';
 import { HostStats } from '@/app/pages/host-stats';
 import { SettingsModal } from '@/app/pages/settings-modal';
@@ -19,10 +20,10 @@ import { Modal } from '@/app/components/modal';
 import { Button } from '@/app/components/ui/button';
 import { api } from '@/lib/api';
 import { login as authLogin, logout as authLogout } from '@/lib/auth';
-import type { UserProfile } from '@/lib/types';
+import type { CreatorCampaign, UserProfile } from '@/lib/types';
 
 export type UserRole = 'creator' | 'host';
-export type Page = 'landing' | 'login' | 'signup' | 'creator-onboarding' | 'host-onboarding' | 'dashboard' | 'campaigns' | 'campaign-detail' | 'campaign-create' | 'campaign-manage' | 'stats' | 'settings';
+export type Page = 'landing' | 'login' | 'signup' | 'creator-onboarding' | 'host-onboarding' | 'dashboard' | 'campaigns' | 'campaign-detail' | 'campaign-create' | 'campaign-manage' | 'active-campaigns' | 'stats' | 'settings';
 
 interface User {
   id: string;
@@ -82,6 +83,32 @@ export default function App() {
   const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const [supportOpen, setSupportOpen] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
+  const [creatorCampaigns, setCreatorCampaigns] = useState<CreatorCampaign[]>([
+    {
+      id: 'active-1',
+      name: 'GlowSkin Launch',
+      thumbnail: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800&q=80',
+      rate: 120,
+      earned: 14500,
+      views: 128000,
+      status: 'active',
+      nextCycleDate: 'Feb 3, 2026',
+      canReverify: false,
+      lastActivityAt: '2026-02-01T10:30:00.000Z',
+    },
+    {
+      id: 'active-2',
+      name: 'UrbanFit Summer Drop',
+      thumbnail: 'https://images.unsplash.com/photo-1463100099107-aa0980c362e6?w=800&q=80',
+      rate: 95,
+      earned: 9800,
+      views: 86000,
+      status: 'active',
+      nextCycleDate: 'Feb 6, 2026',
+      canReverify: true,
+      lastActivityAt: '2026-02-02T08:45:00.000Z',
+    },
+  ]);
 
   const fetchUser = useCallback(async (preferredRole?: UserRole) => {
     try {
@@ -231,19 +258,61 @@ export default function App() {
     setCurrentPage('campaign-detail');
   };
 
-  const handleJoinCampaign = (campaignId: string) => {
+  const handleJoinCampaign = (campaign: { id: string; title: string; thumbnail?: string; ratePer1kViewsPaise: number }) => {
     if (!user) {
       setRedirectAfterAuth('campaign-detail');
-      setSelectedCampaignId(campaignId);
+      setSelectedCampaignId(campaign.id);
       setCurrentPage('signup');
       return;
     }
+    const joinedAt = new Date().toISOString();
+    setCreatorCampaigns((prev) => {
+      const existing = prev.find((item) => item.id === campaign.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === campaign.id
+            ? { ...item, status: 'active', lastActivityAt: joinedAt }
+            : item
+        );
+      }
+      return [
+        {
+          id: campaign.id,
+          name: campaign.title,
+          thumbnail: campaign.thumbnail ?? 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80',
+          rate: Math.round(campaign.ratePer1kViewsPaise / 100),
+          earned: 0,
+          views: 0,
+          status: 'active',
+          nextCycleDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toLocaleDateString(),
+          canReverify: false,
+          lastActivityAt: joinedAt,
+        },
+        ...prev,
+      ];
+    });
     addToast('Joined campaign successfully!', 'success');
+  };
+
+  const handleLeaveCampaign = (campaignId: string) => {
+    setCreatorCampaigns((prev) => prev.filter((campaign) => campaign.id !== campaignId));
+    addToast('Campaign left successfully.', 'info');
+  };
+
+  const handleRecordActivity = (campaignId: string) => {
+    const now = new Date().toISOString();
+    setCreatorCampaigns((prev) =>
+      prev.map((campaign) =>
+        campaign.id === campaignId ? { ...campaign, lastActivityAt: now } : campaign
+      )
+    );
   };
 
   const handleNavigate = (page: string) => {
     if (page === 'campaigns') {
       setCurrentPage('campaigns');
+    } else if (page === 'active-campaigns') {
+      setCurrentPage('active-campaigns');
     } else if (page === 'stats') {
       setCurrentPage('stats');
     } else {
@@ -326,7 +395,10 @@ export default function App() {
         <CampaignDetail
           campaignId={selectedCampaignId}
           userRole={currentRole}
+          joinedCampaigns={creatorCampaigns}
           onJoin={handleJoinCampaign}
+          onLeave={handleLeaveCampaign}
+          onRecordActivity={handleRecordActivity}
           onManage={() => setCurrentPage('campaign-manage')}
           onBack={() => setCurrentPage('campaigns')}
           onToast={addToast}
@@ -366,12 +438,28 @@ export default function App() {
       }
     }
 
+    if (currentPage === 'active-campaigns' && currentRole === 'creator') {
+      return (
+        <CreatorActiveCampaigns
+          campaigns={creatorCampaigns}
+          onCampaignClick={handleCampaignClick}
+          onBack={() => setCurrentPage('dashboard')}
+          onLeave={handleLeaveCampaign}
+          onRecordActivity={handleRecordActivity}
+          onToast={addToast}
+        />
+      );
+    }
+
     // Dashboard (default)
     if (currentRole === 'creator') {
       return (
         <CreatorDashboard
           onCampaignClick={handleCampaignClick}
           onDiscoverCampaigns={() => setCurrentPage('campaigns')}
+          campaigns={creatorCampaigns}
+          onLeave={handleLeaveCampaign}
+          onRecordActivity={handleRecordActivity}
           onToast={addToast}
         />
       );
@@ -405,6 +493,7 @@ export default function App() {
               hostEnabled: user.hostEnabled,
             }}
             currentPage={currentPage}
+            activeCampaignCount={creatorCampaigns.filter((campaign) => campaign.status === 'active').length}
             onNavigate={handleNavigate}
             onRoleSwitch={handleRoleSwitch}
             onOpenCreatorAccount={handleOpenCreatorAccount}

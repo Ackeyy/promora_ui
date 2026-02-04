@@ -9,23 +9,35 @@ import { Modal } from '@/app/components/modal';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { DollarSign, Target, Eye, Upload, RefreshCcw, Calendar, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import type { ToastType } from '@/app/components/toast';
+import type { CreatorCampaign } from '@/lib/types';
 
 interface CreatorDashboardProps {
   onCampaignClick: (id: string) => void;
   onDiscoverCampaigns: () => void;
+  campaigns: CreatorCampaign[];
+  onLeave: (id: string) => void;
+  onRecordActivity: (id: string) => void;
   onToast: (message: string, type?: ToastType) => void;
 }
 
-export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast }: CreatorDashboardProps) {
+export function CreatorDashboard({
+  onCampaignClick,
+  onDiscoverCampaigns,
+  campaigns,
+  onLeave,
+  onRecordActivity,
+  onToast,
+}: CreatorDashboardProps) {
   const [earningsPeriod, setEarningsPeriod] = useState('today');
   const [uploadModal, setUploadModal] = useState<{ open: boolean; campaignId?: string; campaignName?: string }>({ open: false });
   const [reelLink, setReelLink] = useState('');
   const [showReverifyToast, setShowReverifyToast] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [reverifyId, setReverifyId] = useState<string | null>(null);
+  const [leaveTarget, setLeaveTarget] = useState<CreatorCampaign | null>(null);
 
   const earnings = {
     today: 0,
@@ -34,17 +46,11 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
     total: 0,
   };
 
-  const joinedCampaigns: Array<{
-    id: string;
-    name: string;
-    thumbnail: string;
-    rate: number;
-    earned: number;
-    views: number;
-    status: 'active' | 'pending';
-    nextCycleDate: string;
-    canReverify: boolean;
-  }> = [];
+  const joinedCampaigns = useMemo(
+    () =>
+      [...campaigns].sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime()),
+    [campaigns]
+  );
 
   const handleUpload = async () => {
     if (!uploadModal.campaignId) return;
@@ -54,6 +60,7 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
         platform: 'instagram',
         reelUrl: reelLink,
       });
+      onRecordActivity(uploadModal.campaignId);
       onToast('Submission received. Verification cycle queued.', 'success');
       setUploadModal({ open: false });
       setReelLink('');
@@ -73,6 +80,7 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
     setReverifyId(campaign.id);
     try {
       await api.reverifySubmission(campaign.id);
+      onRecordActivity(campaign.id);
       onToast('Re-verification requested for the current cycle.', 'success');
     } catch (error) {
       onToast(error instanceof Error ? error.message : 'Unable to request re-verification.', 'error');
@@ -247,6 +255,13 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
                           <RefreshCcw className="h-4 w-4 mr-2" />
                           {reverifyId === campaign.id ? 'Requesting...' : 'Re-verify'}
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => setLeaveTarget(campaign)}
+                        >
+                          Leave
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -346,6 +361,37 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
       )}
 
       </div>
+
+      <Modal
+        isOpen={Boolean(leaveTarget)}
+        onClose={() => setLeaveTarget(null)}
+        title="Leave campaign?"
+        size="sm"
+      >
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to leave <span className="font-semibold text-foreground">{leaveTarget?.name}</span>?
+            You will stop earning from future verified views.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1" onClick={() => setLeaveTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={() => {
+                if (leaveTarget) {
+                  onLeave(leaveTarget.id);
+                  setLeaveTarget(null);
+                }
+              }}
+            >
+              Leave campaign
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Footer Credit */}
       <div className="mt-auto pt-[125px] text-center text-sm text-muted-foreground">

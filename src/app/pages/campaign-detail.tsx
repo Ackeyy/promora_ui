@@ -7,10 +7,10 @@ import { Modal } from '@/app/components/modal';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { Checkbox } from '@/app/components/ui/checkbox';
-import { ArrowLeft, Eye, Users, DollarSign, Calendar, CheckCircle, Youtube, Instagram, Facebook } from 'lucide-react';
+import { ArrowLeft, Eye, Users, DollarSign, Calendar, CheckCircle, Youtube, Instagram, Facebook, RefreshCcw, Upload, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
-import type { Campaign, UserProfile } from '@/lib/types';
+import type { Campaign, CreatorCampaign, UserProfile } from '@/lib/types';
 import type { ToastType } from '@/app/components/toast';
 
 const PLATFORM_ICON_MAP = {
@@ -22,14 +22,28 @@ const PLATFORM_ICON_MAP = {
 interface CampaignDetailProps {
   campaignId: string;
   userRole: 'creator' | 'host';
-  onJoin: (campaignId: string) => void;
+  joinedCampaigns: CreatorCampaign[];
+  onJoin: (campaign: Campaign) => void;
+  onLeave: (id: string) => void;
+  onRecordActivity: (id: string) => void;
   onManage: () => void;
   onBack: () => void;
   onToast: (message: string, type?: ToastType) => void;
 }
 
-export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack, onToast }: CampaignDetailProps) {
+export function CampaignDetail({
+  campaignId,
+  userRole,
+  joinedCampaigns,
+  onJoin,
+  onLeave,
+  onRecordActivity,
+  onManage,
+  onBack,
+  onToast,
+}: CampaignDetailProps) {
   const [joinModal, setJoinModal] = useState(false);
+  const [leaveModal, setLeaveModal] = useState(false);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [handles, setHandles] = useState({
     youtube: '',
@@ -37,6 +51,10 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
     facebook: '',
   });
   const [isJoining, setIsJoining] = useState(false);
+  const [uploadModal, setUploadModal] = useState(false);
+  const [reelLink, setReelLink] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [reverifyId, setReverifyId] = useState<string | null>(null);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -114,7 +132,9 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
         platforms: selectedPlatforms,
         handles: selectedHandles,
       });
-      onJoin(campaignId);
+      if (campaign) {
+        onJoin(campaign);
+      }
       onToast('Request sent to join campaign.', 'success');
       setJoinModal(false);
     } catch (error) {
@@ -134,6 +154,46 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
     selectedPlatforms.length === 0 ||
     selectedPlatforms.some((platform) => !handles[platform as keyof typeof handles]?.trim()) ||
     isJoining;
+
+  const joinedCampaign = joinedCampaigns.find((item) => item.id === campaignId);
+  const isJoined = Boolean(joinedCampaign);
+
+  const handleUpload = async () => {
+    if (!campaign) return;
+    setIsUploading(true);
+    try {
+      await api.submitContent(campaignId, {
+        platform: 'instagram',
+        reelUrl: reelLink,
+      });
+      onRecordActivity(campaignId);
+      onToast('Submission received. Verification cycle queued.', 'success');
+      setUploadModal(false);
+      setReelLink('');
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Unable to submit content.', 'error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleReverify = async () => {
+    if (!joinedCampaign) return;
+    if (!joinedCampaign.canReverify) {
+      onToast('Re-verification opens on the next cycle.', 'info');
+      return;
+    }
+    setReverifyId(campaignId);
+    try {
+      await api.reverifySubmission(campaignId);
+      onRecordActivity(campaignId);
+      onToast('Re-verification requested for the current cycle.', 'success');
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : 'Unable to request re-verification.', 'error');
+    } finally {
+      setReverifyId(null);
+    }
+  };
 
   if (isLoading || !campaign) {
     return (
@@ -189,13 +249,33 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
                 </div>
 
                 {userRole === 'creator' ? (
-                  <Button
-                    size="lg"
-                    onClick={handleJoinClick}
-                    className="bg-gradient-to-r from-primary to-chart-2 hover:shadow-lg hover:shadow-primary/50"
-                  >
-                    Join Campaign
-                  </Button>
+                  <div className="flex flex-col items-end gap-3">
+                    <div className="flex items-center gap-3">
+                      <Button
+                        size="lg"
+                        onClick={handleJoinClick}
+                        disabled={isJoined}
+                        className={
+                          isJoined
+                            ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                            : 'bg-gradient-to-r from-primary to-chart-2 hover:shadow-lg hover:shadow-primary/50'
+                        }
+                      >
+                        {isJoined ? 'Joined' : 'Join Campaign'}
+                      </Button>
+                      {isJoined && (
+                        <Button size="lg" variant="destructive" onClick={() => setLeaveModal(true)}>
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Leave
+                        </Button>
+                      )}
+                    </div>
+                    {isJoined && joinedCampaign && (
+                      <div className="text-right text-sm text-muted-foreground">
+                        Active since {new Date(joinedCampaign.lastActivityAt).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <Button
                     size="lg"
@@ -294,6 +374,25 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
                     <p className="text-3xl font-bold">0</p>
                   </div>
 
+                  {userRole === 'creator' && isJoined && joinedCampaign && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                          <Eye className="h-3.5 w-3.5" />
+                          Your Views
+                        </div>
+                        <p className="text-lg font-semibold">{joinedCampaign.views.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                          <DollarSign className="h-3.5 w-3.5" />
+                          Pay Received
+                        </div>
+                        <p className="text-lg font-semibold">₹{joinedCampaign.earned.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                       <Users className="h-4 w-4" />
@@ -327,6 +426,26 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
                       {campaign.startAt ? new Date(campaign.startAt).toLocaleDateString() : 'TBD'} - {campaign.endAt ? new Date(campaign.endAt).toLocaleDateString() : 'TBD'}
                     </p>
                   </div>
+
+                  {userRole === 'creator' && isJoined && (
+                    <div className="flex flex-col gap-3 pt-2 border-t border-border">
+                      <Button
+                        onClick={() => setUploadModal(true)}
+                        className="bg-primary hover:shadow-lg hover:shadow-primary/30 transition-all"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleReverify}
+                        disabled={!joinedCampaign?.canReverify || reverifyId === campaignId}
+                      >
+                        <RefreshCcw className="h-4 w-4 mr-2" />
+                        {reverifyId === campaignId ? 'Requesting...' : 'Re-verify'}
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -416,6 +535,81 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
               className="flex-1 bg-gradient-to-r from-primary to-chart-2"
             >
               {isJoining ? 'Joining...' : 'Join Campaign'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={uploadModal}
+        onClose={() => {
+          setUploadModal(false);
+          setReelLink('');
+        }}
+        title="Upload Content"
+        size="md"
+      >
+        <div className="p-6 space-y-6">
+          <p className="text-sm text-muted-foreground">
+            Upload content for: <span className="font-semibold text-foreground">{campaign.title}</span>
+          </p>
+          <div className="space-y-2">
+            <Label htmlFor="campaign-detail-reel">Reel/Video Link</Label>
+            <Input
+              id="campaign-detail-reel"
+              placeholder="https://instagram.com/reel/..."
+              value={reelLink}
+              onChange={(e) => setReelLink(e.target.value)}
+              className="bg-background"
+            />
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUploadModal(false);
+                setReelLink('');
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpload}
+              disabled={!reelLink || isUploading}
+              className="flex-1 bg-gradient-to-r from-primary to-chart-2"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {isUploading ? 'Uploading...' : 'Verify & Upload'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={leaveModal}
+        onClose={() => setLeaveModal(false)}
+        title="Leave campaign?"
+        size="sm"
+      >
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to leave <span className="font-semibold text-foreground">{campaign.title}</span>?
+            You will stop earning from future verified views.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex-1" onClick={() => setLeaveModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={() => {
+                onLeave(campaignId);
+                setLeaveModal(false);
+              }}
+            >
+              Leave campaign
             </Button>
           </div>
         </div>

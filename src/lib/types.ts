@@ -87,3 +87,16 @@ export interface RazorpayOrder {
   currency: string;
   receipt: string;
 }
+
+export interface CreatorCampaign {
+  id: string;
+  name: string;
+  thumbnail: string;
+  rate: number;
+  earned: number;
+  views: number;
+  status: 'active' | 'pending';
+  nextCycleDate: string;
+  canReverify: boolean;
+  lastActivityAt: string;
+}
