@@ -15,6 +15,7 @@ import { CampaignManage } from '@/app/pages/campaign-manage';
 import { CreatorStats } from '@/app/pages/creator-stats';
 import { HostStats } from '@/app/pages/host-stats';
 import { SettingsModal } from '@/app/pages/settings-modal';
+import { Modal } from '@/app/components/modal';
 import { api } from '@/lib/api';
 import { login as authLogin, logout as authLogout } from '@/lib/auth';
 import type { UserProfile } from '@/lib/types';
@@ -30,6 +31,8 @@ interface User {
   role: UserRole;
   isOnboarded: boolean;
   isHostVerified?: boolean;
+  creatorEnabled: boolean;
+  hostEnabled: boolean;
 }
 
 function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
@@ -44,6 +47,8 @@ function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
     role,
     isOnboarded: p.onboardingComplete,
     isHostVerified: p.hostProfile?.verifiedBadge,
+    creatorEnabled: p.roleMode.creatorEnabled,
+    hostEnabled: p.roleMode.hostEnabled,
   };
 }
 
@@ -56,6 +61,8 @@ export default function App() {
   const [redirectAfterAuth, setRedirectAfterAuth] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [roleChoiceOpen, setRoleChoiceOpen] = useState(false);
+  const [roleChoiceUser, setRoleChoiceUser] = useState<User | null>(null);
   const { toasts, addToast, removeToast } = useToast();
 
   const fetchUser = useCallback(async (preferredRole?: UserRole) => {
@@ -99,6 +106,12 @@ export default function App() {
     }
     const u = await fetchUser();
     if (u) {
+      if (u.creatorEnabled && u.hostEnabled) {
+        setRoleChoiceUser(u);
+        setRoleChoiceOpen(true);
+        addToast('Choose how you want to proceed.', 'info');
+        return;
+      }
       setCurrentRole(u.role);
       if (redirectAfterAuth) {
         setCurrentPage(redirectAfterAuth as Page);
@@ -368,6 +381,54 @@ export default function App() {
       )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {roleChoiceOpen && roleChoiceUser && (
+        <Modal
+          isOpen={roleChoiceOpen}
+          onClose={() => {
+            setRoleChoiceOpen(false);
+            setRoleChoiceUser(null);
+          }}
+          title="Continue as"
+          size="sm"
+        >
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Choose which dashboard you want to use for this session.
+            </p>
+            <div className="grid gap-3">
+              <button
+                type="button"
+                className="w-full rounded-lg border border-border bg-background px-4 py-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
+                onClick={() => {
+                  setCurrentRole('creator');
+                  setUser({ ...roleChoiceUser, role: 'creator' });
+                  setRoleChoiceOpen(false);
+                  setRoleChoiceUser(null);
+                  setCurrentPage('dashboard');
+                }}
+              >
+                <span className="block font-semibold">Creator</span>
+                <span className="block text-xs text-muted-foreground">Promote campaigns and track earnings.</span>
+              </button>
+              <button
+                type="button"
+                className="w-full rounded-lg border border-border bg-background px-4 py-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
+                onClick={() => {
+                  setCurrentRole('host');
+                  setUser({ ...roleChoiceUser, role: 'host' });
+                  setRoleChoiceOpen(false);
+                  setRoleChoiceUser(null);
+                  setCurrentPage('dashboard');
+                }}
+              >
+                <span className="block font-semibold">Host</span>
+                <span className="block text-xs text-muted-foreground">Manage campaigns and creator payouts.</span>
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
