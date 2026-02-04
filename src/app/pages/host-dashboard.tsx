@@ -35,7 +35,6 @@ export function HostDashboard({ onCampaignClick, onCreateCampaign, onManageCampa
     views: number;
     creators: number;
     status: 'active';
-    platforms: string[];
   }> = [];
 
   const totalFundsLeft = campaigns.reduce((acc, c) => acc + (c.budget - c.spent - c.reserved), 0);
@@ -204,13 +203,6 @@ export function HostDashboard({ onCampaignClick, onCreateCampaign, onManageCampa
                       onClick={() => onCampaignClick(campaign.id)}
                     >
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute top-3 right-3 flex gap-2">
-                        {campaign.platforms.map((platform) => (
-                          <Badge key={platform} className="bg-primary/90 backdrop-blur">
-                            {platform}
-                          </Badge>
-                        ))}
-                      </div>
                       <Badge className="absolute bottom-3 left-3 bg-green-500/90 backdrop-blur">
                         Active
                       </Badge>
@@ -242,7 +234,7 @@ export function HostDashboard({ onCampaignClick, onCreateCampaign, onManageCampa
                                 ₹{campaign.spent.toLocaleString()} / ₹{campaign.budget.toLocaleString()}
                               </span>
                             </div>
-                            <Progress value={(campaign.spent / campaign.budget) * 100} className="h-2" />
+                            <Progress value={(campaign.spent / campaign.budget) * 100} className="h-2" indicatorClassName="bg-yellow-400" />
                           </div>
 
                           {/* Budget Breakdown */}

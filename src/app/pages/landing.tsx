@@ -20,10 +20,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       ratePerView: 50,
       budget: 100000,
       spent: 65000,
-      approvalRate: 92,
       views: 1300000,
       creators: 45,
-      platforms: ['IG', 'YT'],
+      createdAt: new Date().toISOString(),
+      host: { name: 'Style Union', verifiedBadge: true },
     },
     {
       id: '2',
@@ -33,10 +33,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       ratePerView: 70,
       budget: 200000,
       spent: 120000,
-      approvalRate: 88,
       views: 1700000,
       creators: 62,
-      platforms: ['YT', 'FB'],
+      createdAt: new Date(Date.now() - 86400000 * 12).toISOString(),
+      host: { name: 'Gadgetly', verifiedBadge: false },
     },
     {
       id: '3',
@@ -46,10 +46,10 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       ratePerView: 45,
       budget: 75000,
       spent: 48000,
-      approvalRate: 95,
       views: 1066000,
       creators: 38,
-      platforms: ['IG', 'FB'],
+      createdAt: new Date(Date.now() - 86400000 * 21).toISOString(),
+      host: { name: 'Wellness Co', verifiedBadge: true },
     },
   ];
 

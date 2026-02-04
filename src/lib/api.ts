@@ -11,7 +11,7 @@ import type {
 
 export const api = {
   getMe: () => apiFetch<ApiResponse<UserProfile>>('/api/me'),
-  submitCreatorOnboarding: (payload: { platforms: string[]; contentTypes?: string[] }) =>
+  submitCreatorOnboarding: (payload: { platforms: string[]; contentTypes?: string[]; handles?: Record<string, string> }) =>
     apiFetch<ApiResponse<{ ok: boolean }>>('/api/me/onboarding/creator', { method: 'POST', body: payload }),
   submitHostOnboarding: (payload: { companyName: string; website?: string; businessType?: string }) =>
     apiFetch<ApiResponse<{ ok: boolean }>>('/api/me/onboarding/host', { method: 'POST', body: payload }),
@@ -27,7 +27,15 @@ export const api = {
     title: string;
     description: string;
     thumbnail?: string;
+    videoUrl?: string;
+    campaignType?: string;
+    productType?: string;
+    productLink?: string;
+    reviewContent?: boolean;
     platforms: string[];
+    platformRates?: Record<string, number>;
+    tags?: string[];
+    requirements?: string[];
     ratePer1kViewsPaise: number;
     budgetTotalPaise: number;
     startAt?: string;

@@ -1,8 +1,8 @@
-// File: C:\Users\ADDMANIA006\Documents\codes\promora\promora test 1\server\app\api\auth\[...nextauth]\route.ts
-import * as entry from '../../../../../../app/api/auth/[...nextauth]/route.js'
+// File: C:\Users\ADDMANIA006\Documents\codes\promora\promora test 1\server\app\api\campaigns\[id]\join\route.ts
+import * as entry from '../../../../../../../app/api/campaigns/[id]/join/route.js'
 import type { NextRequest } from 'next/server.js'
 
-type TEntry = typeof import('../../../../../../app/api/auth/[...nextauth]/route.js')
+type TEntry = typeof import('../../../../../../../app/api/campaigns/[id]/join/route.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{

@@ -74,6 +74,7 @@ model Profile {
   creatorPlatforms String[] // preferred platforms
   creatorContentTypes String[]
   hostBusinessType String?
+  creatorHandles  Json?
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -83,8 +84,16 @@ model Campaign {
   title                String
   description          String   @db.Text
   thumbnail            String?
+  videoUrl             String?
+  campaignType         String?
+  productType          String?
+  productLink          String?
+  reviewContent        Boolean  @default(false)
   platforms            String[]
+  platformRates        Json?
   ratePer1kViewsPaise  Int      // paise only
+  tags                 String[] @default([])
+  requirements         String[] @default([])
   cycleHours           Int      @default(48)
   submissionEligibilityDays Int @default(30)
   startAt              DateTime?

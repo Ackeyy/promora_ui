@@ -55,6 +55,7 @@ export function CreatorOnboarding({ onComplete, onToast }: CreatorOnboardingProp
     } else {
       setIsSubmitting(true);
       try {
+        const handleEntries = Object.entries(socialLinks).filter(([, value]) => value.trim().length > 0);
         await api.submitCreatorOnboarding({
           platforms: platforms.map((p) =>
             p.toUpperCase()
@@ -63,6 +64,7 @@ export function CreatorOnboarding({ onComplete, onToast }: CreatorOnboardingProp
               .replace(/^FB$/i, 'FACEBOOK'),
           ),
           contentTypes,
+          handles: handleEntries.length ? Object.fromEntries(handleEntries) : undefined,
         });
         onComplete();
       } catch (e) {

@@ -28,6 +28,7 @@ export async function GET() {
           website: p.website ?? undefined,
           verifiedBadge: p.verifiedBadge,
         } : undefined,
+        creatorHandles: p.creatorHandles ?? undefined,
         onboardingComplete,
         adminEnabled: p.adminEnabled,
       },
@@ -72,6 +73,7 @@ export async function PATCH(req: Request) {
         avatarUrl: user.image ?? undefined,
         roleMode: { creatorEnabled: p.creatorEnabled, hostEnabled: p.hostEnabled },
         hostProfile: { companyName: p.companyName ?? undefined, website: p.website ?? undefined, verifiedBadge: p.verifiedBadge },
+        creatorHandles: p.creatorHandles ?? undefined,
         onboardingComplete: p.onboardingDone,
       },
     });
