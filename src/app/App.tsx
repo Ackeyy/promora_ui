@@ -81,7 +81,7 @@ export default function App() {
   const fetchUser = useCallback(async (preferredRole?: UserRole) => {
     try {
       const res = await api.getMe();
-      const u = profileToUser(res.data, preferredRole ?? currentRole);
+      const u = profileToUser(res.data, preferredRole);
       setUser(u);
       setCurrentRole(u.role);
       return u;
@@ -89,7 +89,7 @@ export default function App() {
       setUser(null);
       return null;
     }
-  }, [currentRole]);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
