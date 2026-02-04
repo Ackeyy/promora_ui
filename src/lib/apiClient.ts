@@ -18,6 +18,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   const url = `${API_BASE_URL}${path}`;
   const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers ?? {}),

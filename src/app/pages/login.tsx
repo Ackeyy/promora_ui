@@ -6,7 +6,7 @@ import { ArrowLeft, LogIn } from 'lucide-react';
 import { useState } from 'react';
 
 interface LoginPageProps {
-  onLogin: (email: string) => void;
+  onLogin: (email: string, password: string) => void;
   onNavigate: (page: string) => void;
 }
 
@@ -17,7 +17,7 @@ export function LoginPage({ onLogin, onNavigate }: LoginPageProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && password) {
-      onLogin(email);
+      onLogin(email, password);
     }
   };
 

@@ -11,6 +11,15 @@ import type {
 
 export const api = {
   getMe: () => apiFetch<ApiResponse<UserProfile>>('/api/me'),
+  submitCreatorOnboarding: (payload: { platforms: string[]; contentTypes?: string[] }) =>
+    apiFetch<ApiResponse<{ ok: boolean }>>('/api/me/onboarding/creator', { method: 'POST', body: payload }),
+  submitHostOnboarding: (payload: { companyName: string; website?: string; businessType?: string }) =>
+    apiFetch<ApiResponse<{ ok: boolean }>>('/api/me/onboarding/host', { method: 'POST', body: payload }),
+  signup: (payload: { email: string; password: string; name?: string; role: 'creator' | 'host' }) =>
+    apiFetch<ApiResponse<{ id: string; email: string; name: string | null }>>('/api/auth/signup', {
+      method: 'POST',
+      body: payload,
+    }),
   getCampaigns: (status?: string) =>
     apiFetch<ApiResponse<Campaign[]>>(`/api/campaigns${status ? `?status=${status}` : ''}`),
   getCampaign: (id: string) => apiFetch<ApiResponse<Campaign>>(`/api/campaigns/${id}`),

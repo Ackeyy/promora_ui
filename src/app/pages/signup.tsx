@@ -8,7 +8,7 @@ import { useState } from 'react';
 import type { UserRole } from '@/app/App';
 
 interface SignupPageProps {
-  onSignup: (email: string, role: UserRole) => void;
+  onSignup: (email: string, password: string, role: UserRole) => void;
   onNavigate: (page: string) => void;
 }
 
@@ -21,7 +21,7 @@ export function SignupPage({ onSignup, onNavigate }: SignupPageProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && password && agreedToTerms) {
-      onSignup(email, selectedRole);
+      onSignup(email, password, selectedRole);
     }
   };
 

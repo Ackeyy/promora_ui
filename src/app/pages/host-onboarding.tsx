@@ -4,16 +4,19 @@ import { Label } from '@/app/components/ui/label';
 import { Input } from '@/app/components/ui/input';
 import { ArrowRight, Store, Package, ShoppingBag, Shirt, Utensils, Dumbbell, Briefcase, Globe } from 'lucide-react';
 import { useState } from 'react';
+import { api } from '@/lib/api';
 
 interface HostOnboardingProps {
   onComplete: () => void;
+  onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export function HostOnboarding({ onComplete }: HostOnboardingProps) {
+export function HostOnboarding({ onComplete, onToast }: HostOnboardingProps) {
   const [step, setStep] = useState(1);
   const [businessType, setBusinessType] = useState('');
   const [website, setWebsite] = useState('');
   const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const businessTypes = [
     { id: 'fashion', label: 'Fashion & Apparel', icon: <Shirt className="h-5 w-5" /> },
@@ -25,11 +28,23 @@ export function HostOnboarding({ onComplete }: HostOnboardingProps) {
     { id: 'other', label: 'Other', icon: <Store className="h-5 w-5" /> },
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < 2) {
       setStep(step + 1);
     } else {
-      onComplete();
+      setIsSubmitting(true);
+      try {
+        await api.submitHostOnboarding({
+          companyName: businessType || 'Other',
+          website: website || undefined,
+          businessType,
+        });
+        onComplete();
+      } catch (e) {
+        onToast?.(e instanceof Error ? e.message : 'Failed to save', 'error');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 

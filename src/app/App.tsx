@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AppSidebar } from '@/app/components/app-sidebar';
 import { ToastContainer, useToast } from '@/app/components/toast';
 import { LandingPage } from '@/app/pages/landing';
@@ -15,6 +15,9 @@ import { CampaignManage } from '@/app/pages/campaign-manage';
 import { CreatorStats } from '@/app/pages/creator-stats';
 import { HostStats } from '@/app/pages/host-stats';
 import { SettingsModal } from '@/app/pages/settings-modal';
+import { api } from '@/lib/api';
+import { login as authLogin, logout as authLogout } from '@/lib/auth';
+import type { UserProfile } from '@/lib/types';
 
 export type UserRole = 'creator' | 'host';
 export type Page = 'landing' | 'login' | 'signup' | 'creator-onboarding' | 'host-onboarding' | 'dashboard' | 'campaigns' | 'campaign-detail' | 'campaign-create' | 'campaign-manage' | 'stats' | 'settings';
@@ -29,55 +32,96 @@ interface User {
   isHostVerified?: boolean;
 }
 
+function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
+  const role: UserRole =
+    preferredRole ??
+    (p.roleMode.creatorEnabled ? 'creator' : p.roleMode.hostEnabled ? 'host' : 'creator');
+  return {
+    id: p.id,
+    name: p.name ?? p.email,
+    email: p.email,
+    avatar: p.avatarUrl,
+    role,
+    isOnboarded: p.onboardingComplete,
+    isHostVerified: p.hostProfile?.verifiedBadge,
+  };
+}
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
   const [user, setUser] = useState<User | null>(null);
+  const [currentRole, setCurrentRole] = useState<UserRole>('creator');
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [redirectAfterAuth, setRedirectAfterAuth] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
 
-  // Force dark mode
+  const fetchUser = useCallback(async (preferredRole?: UserRole) => {
+    try {
+      const res = await api.getMe();
+      const u = profileToUser(res.data, preferredRole ?? currentRole);
+      setUser(u);
+      setCurrentRole(u.role);
+      return u;
+    } catch {
+      setUser(null);
+      return null;
+    }
+  }, [currentRole]);
+
   useEffect(() => {
     document.documentElement.classList.add('dark');
   }, []);
 
-  const handleLogin = (email: string) => {
-    // Mock login
-    const mockUser: User = {
-      id: '1',
-      name: 'Alex Johnson',
-      email,
-      avatar: '',
-      role: 'creator',
-      isOnboarded: true,
-      isHostVerified: false,
-    };
-    setUser(mockUser);
-    
-    if (redirectAfterAuth) {
-      setCurrentPage(redirectAfterAuth as Page);
-      setRedirectAfterAuth(null);
-    } else {
-      setCurrentPage('dashboard');
+  useEffect(() => {
+    fetchUser().finally(() => setAuthChecked(true));
+  }, []);
+
+  const handleLogin = async (email: string, password: string) => {
+    const result = await authLogin(email, password);
+    if (!result.ok) {
+      addToast(result.error ?? 'Login failed', 'error');
+      return;
     }
-    addToast('Welcome back!', 'success');
+    const u = await fetchUser();
+    if (u) {
+      setCurrentRole(u.role);
+      if (redirectAfterAuth) {
+        setCurrentPage(redirectAfterAuth as Page);
+        setRedirectAfterAuth(null);
+      } else {
+        setCurrentPage('dashboard');
+      }
+      addToast('Welcome back!', 'success');
+    } else {
+      addToast('Could not load profile', 'error');
+    }
   };
 
-  const handleSignup = (email: string, role: UserRole) => {
-    const mockUser: User = {
-      id: '1',
-      name: email.split('@')[0],
-      email,
-      role,
-      isOnboarded: false,
-    };
-    setUser(mockUser);
-    
-    if (role === 'creator') {
-      setCurrentPage('creator-onboarding');
-    } else {
-      setCurrentPage('host-onboarding');
+  const handleSignup = async (email: string, password: string, role: UserRole) => {
+    try {
+      await api.signup({ email, password, role });
+      const result = await authLogin(email, password);
+      if (!result.ok) {
+        addToast('Account created. Please log in.', 'success');
+        setCurrentPage('login');
+        return;
+      }
+      const u = await fetchUser();
+      if (u) {
+        setCurrentRole(role);
+        if (!u.isOnboarded) {
+          setCurrentPage(role === 'creator' ? 'creator-onboarding' : 'host-onboarding');
+        } else {
+          setCurrentPage('dashboard');
+        }
+      } else {
+        setCurrentPage('login');
+      }
+    } catch (e: unknown) {
+      const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Signup failed';
+      addToast(msg, 'error');
     }
   };
 
@@ -96,21 +140,20 @@ export default function App() {
 
   const handleRoleToggle = () => {
     if (!user) return;
-
-    const newRole: UserRole = user.role === 'creator' ? 'host' : 'creator';
-    
-    // If switching to host and not onboarded as host, show onboarding
+    const newRole: UserRole = currentRole === 'creator' ? 'host' : 'creator';
     if (newRole === 'host' && !user.isHostVerified) {
       setCurrentPage('host-onboarding');
       setUser({ ...user, role: newRole });
+      setCurrentRole(newRole);
       return;
     }
-
+    setCurrentRole(newRole);
     setUser({ ...user, role: newRole });
     setCurrentPage('dashboard');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authLogout();
     setUser(null);
     setCurrentPage('landing');
     addToast('Logged out successfully', 'info');
@@ -142,6 +185,13 @@ export default function App() {
   };
 
   const renderPage = () => {
+    if (!authChecked) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </div>
+      );
+    }
     // Public pages
     if (currentPage === 'landing') {
       return <LandingPage onNavigate={setCurrentPage} />;
@@ -155,18 +205,24 @@ export default function App() {
 
     // Onboarding
     if (currentPage === 'creator-onboarding') {
-      return <CreatorOnboarding onComplete={handleOnboardingComplete} />;
+      return (
+        <CreatorOnboarding
+          onComplete={handleOnboardingComplete}
+          onToast={addToast}
+        />
+      );
     }
     if (currentPage === 'host-onboarding') {
       return (
         <HostOnboarding
-          onComplete={() => {
-            if (user) {
-              setUser({ ...user, isHostVerified: true, isOnboarded: true });
+          onComplete={async () => {
+            const u = await fetchUser();
+            if (u) {
               setCurrentPage('dashboard');
               addToast('Host onboarding completed!', 'success');
             }
           }}
+          onToast={addToast}
         />
       );
     }
@@ -183,7 +239,7 @@ export default function App() {
         <CampaignDiscover
           onCampaignClick={handleCampaignClick}
           onCreateCampaign={() => setCurrentPage('campaign-create')}
-          userRole={user.role}
+          userRole={currentRole}
         />
       );
     }
@@ -192,7 +248,7 @@ export default function App() {
       return (
         <CampaignDetail
           campaignId={selectedCampaignId}
-          userRole={user.role}
+          userRole={currentRole}
           onJoin={handleJoinCampaign}
           onManage={() => setCurrentPage('campaign-manage')}
           onBack={() => setCurrentPage('campaigns')}
@@ -201,7 +257,7 @@ export default function App() {
       );
     }
 
-    if (currentPage === 'campaign-create' && user.role === 'host') {
+    if (currentPage === 'campaign-create' && currentRole === 'host') {
       return (
         <CampaignCreate
           onComplete={(campaignId) => {
@@ -215,7 +271,7 @@ export default function App() {
       );
     }
 
-    if (currentPage === 'campaign-manage' && selectedCampaignId && user.role === 'host') {
+    if (currentPage === 'campaign-manage' && selectedCampaignId && currentRole === 'host') {
       return (
         <CampaignManage
           campaignId={selectedCampaignId}
@@ -226,7 +282,7 @@ export default function App() {
 
     // Stats pages
     if (currentPage === 'stats') {
-      if (user.role === 'creator') {
+      if (currentRole === 'creator') {
         return <CreatorStats />;
       } else {
         return <HostStats />;
@@ -234,7 +290,7 @@ export default function App() {
     }
 
     // Dashboard (default)
-    if (user.role === 'creator') {
+    if (currentRole === 'creator') {
       return (
         <CreatorDashboard
           onCampaignClick={handleCampaignClick}
@@ -267,7 +323,7 @@ export default function App() {
             user={{
               name: user.name,
               avatar: user.avatar,
-              role: user.role,
+              role: currentRole,
             }}
             currentPage={currentPage}
             onNavigate={handleNavigate}

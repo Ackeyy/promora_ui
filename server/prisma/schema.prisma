@@ -1,0 +1,228 @@
+// Promora MVP - Supabase Postgres (Prisma)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth required tables (minimal for credentials)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  passwordHash  String?   // for credentials
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  profile          Profile?
+  campaignsHosted  Campaign[]       @relation("CampaignHost")
+  participations   Participation[]
+  submissions      Submission[]
+  payouts          Payout[]
+  auditLogs        AuditLog[]       @relation("AuditActor")
+}
+
+model Profile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  creatorEnabled  Boolean  @default(false)
+  hostEnabled     Boolean  @default(false)
+  adminEnabled    Boolean  @default(false)
+  onboardingDone  Boolean  @default(false)
+  companyName     String?
+  website         String?
+  verifiedBadge   Boolean  @default(false)
+  creatorPlatforms String[] // preferred platforms
+  creatorContentTypes String[]
+  hostBusinessType String?
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Campaign {
+  id                   String   @id @default(cuid())
+  hostId               String
+  title                String
+  description          String   @db.Text
+  thumbnail            String?
+  platforms            String[]
+  ratePer1kViewsPaise  Int      // paise only
+  cycleHours           Int      @default(48)
+  submissionEligibilityDays Int @default(30)
+  startAt              DateTime?
+  endAt                DateTime?
+  status               String   @default("DRAFT") // DRAFT | ACTIVE | PAUSED | ENDED
+  budgetTotalPaise     Int      @default(0)
+  budgetReservedPaise  Int      @default(0)
+  budgetSpentPaise     Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  host          User           @relation("CampaignHost", fields: [hostId], references: [id], onDelete: Cascade)
+  participations Participation[]
+  submissions   Submission[]
+  ledgerEntries LedgerEntry[]
+}
+
+model Participation {
+  id          String   @id @default(cuid())
+  campaignId  String
+  creatorId   String
+  platforms   String[] // selected at join
+  handles     Json     // { youtube: "@x", instagram: "@y" }
+  status      String   @default("ACTIVE") // ACTIVE | SUSPENDED | ENDED
+  eligibleUntil DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign   Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator    User        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+
+  @@unique([campaignId, creatorId])
+}
+
+model Submission {
+  id                    String   @id @default(cuid())
+  campaignId             String
+  creatorId              String
+  participationId        String?
+  platform               String   // YOUTUBE | INSTAGRAM | FACEBOOK
+  handle                 String
+  reelUrl                String
+  status                 String   @default("PENDING_HOST_APPROVAL") // PENDING_HOST_APPROVAL | ACTIVE | SUSPENDED | ENDED
+  eligibleUntil          DateTime?
+  paidViewsTotal         Int      @default(0)
+  lastVerifiedViewsTotal Int      @default(0)
+  lastVerifiedCycleIndex Int      @default(-1)
+  payoutStatus           String   @default("UNPAID") // UNPAID | PAID
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  campaign    Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creator     User        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  participation Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull)
+  verificationRequests VerificationRequest[]
+  verificationChecks    VerificationCheck[]
+  ledgerEntries         LedgerEntry[]
+  payoutItems           PayoutItem[]
+}
+
+model VerificationRequest {
+  id          String   @id @default(cuid())
+  submissionId String
+  cycleIndex  Int
+  status      String   @default("PENDING") // PENDING | VERIFIED | REJECTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, cycleIndex])
+}
+
+model VerificationCheck {
+  id                 String   @id @default(cuid())
+  submissionId       String
+  cycleIndex         Int
+  verifiedViewsTotal Int
+  adminId            String
+  proofNote          String?  @db.Text
+  proofUrl           String?
+  createdAt          DateTime @default(now())
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model LedgerEntry {
+  id            String   @id @default(cuid())
+  type          String   // DEPOSIT | RESERVE | RELEASE_RESERVE | PAYOUT_PAID | FEE
+  campaignId    String?
+  submissionId  String?
+  payoutId      String?
+  amountPaise   Int
+  idempotencyKey String? @unique
+  createdById   String?
+  createdAt     DateTime @default(now())
+
+  campaign   Campaign?   @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  submission Submission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+  payout     Payout?     @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+}
+
+model Payout {
+  id          String   @id @default(cuid())
+  creatorId   String
+  amountPaise Int
+  status      String   @default("PENDING") // PENDING | PROCESSING | PAID | FAILED
+  referenceId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator User         @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  items   PayoutItem[]
+  ledgerEntries LedgerEntry[]
+}
+
+model PayoutItem {
+  id           String   @id @default(cuid())
+  payoutId     String
+  submissionId String
+  amountPaise  Int
+  createdAt    DateTime @default(now())
+
+  payout     Payout    @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([payoutId, submissionId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actionType String
+  targetType String
+  targetId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+}

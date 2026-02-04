@@ -19,6 +19,7 @@ export interface UserProfile {
     verifiedBadge: boolean;
   };
   onboardingComplete: boolean;
+  adminEnabled?: boolean;
 }
 
 export interface Campaign {
