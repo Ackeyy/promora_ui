@@ -50,6 +50,15 @@ function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
     p.modeType === 'POLYCODE'
       ? polycodeRole
       : modeRole ?? (p.roleMode.hostEnabled ? 'host' : 'creator');
+  const role: UserRole =
+    preferredRole ??
+    (p.roleMode.creatorEnabled && p.roleMode.hostEnabled && lastRole
+      ? lastRole
+      : p.roleMode.creatorEnabled
+        ? 'creator'
+        : p.roleMode.hostEnabled
+          ? 'host'
+          : 'creator');
   return {
     id: p.id,
     name: p.name ?? p.email,
@@ -216,6 +225,22 @@ export default function App() {
     api.updateMe({ lastRoleUsed: nextRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
     setCurrentRole(nextRole);
     if (user) setUser({ ...user, role: nextRole });
+    if (newRole === 'host' && !user.hostEnabled) {
+      setCurrentPage('host-onboarding');
+      return;
+    }
+    if (newRole === 'creator' && !user.creatorEnabled) {
+      setCurrentPage('creator-onboarding');
+      return;
+    }
+    if (user.creatorEnabled && user.hostEnabled) {
+      setPendingRole(newRole);
+      setToggleConfirmOpen(true);
+      return;
+    }
+    api.updateMe({ lastRoleUsed: newRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
+    setCurrentRole(newRole);
+    setUser({ ...user, role: newRole });
     setCurrentPage('dashboard');
   };
 
@@ -543,6 +568,13 @@ export default function App() {
                   handleRoleChangeConfirm(pendingRole);
                   setToggleConfirmOpen(false);
                   setPendingRole(null);
+                  const nextRole = pendingRole;
+                  api.updateMe({ lastRoleUsed: nextRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
+                  setCurrentRole(nextRole);
+                  if (user) setUser({ ...user, role: nextRole });
+                  setToggleConfirmOpen(false);
+                  setPendingRole(null);
+                  setCurrentPage('dashboard');
                 }}
               >
                 Continue
