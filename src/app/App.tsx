@@ -16,6 +16,10 @@ import { CreatorStats } from '@/app/pages/creator-stats';
 import { HostStats } from '@/app/pages/host-stats';
 import { SettingsModal } from '@/app/pages/settings-modal';
 import { Modal } from '@/app/components/modal';
+<<<<<<< HEAD
+=======
+import { Button } from '@/app/components/ui/button';
+>>>>>>> codex/review-files
 import { api } from '@/lib/api';
 import { login as authLogin, logout as authLogout } from '@/lib/auth';
 import type { UserProfile } from '@/lib/types';
@@ -38,6 +42,7 @@ interface User {
 
 function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
   const lastRole = p.lastRoleUsed === 'HOST' ? 'host' : p.lastRoleUsed === 'CREATOR' ? 'creator' : undefined;
+<<<<<<< HEAD
   const role: UserRole =
     preferredRole ??
     (p.roleMode.creatorEnabled && p.roleMode.hostEnabled && lastRole
@@ -47,6 +52,19 @@ function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
         : p.roleMode.hostEnabled
           ? 'host'
           : 'creator');
+=======
+  const modeRole: UserRole | undefined =
+    p.modeType === 'HOST'
+      ? 'host'
+      : p.modeType === 'CREATOR'
+        ? 'creator'
+        : undefined;
+  const polycodeRole = preferredRole ?? lastRole ?? 'creator';
+  const role: UserRole =
+    p.modeType === 'POLYCODE'
+      ? polycodeRole
+      : modeRole ?? (p.roleMode.hostEnabled ? 'host' : 'creator');
+>>>>>>> codex/review-files
   return {
     id: p.id,
     name: p.name ?? p.email,
@@ -72,16 +90,24 @@ export default function App() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
+<<<<<<< HEAD
+=======
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+>>>>>>> codex/review-files
   const [roleChoiceOpen, setRoleChoiceOpen] = useState(false);
   const [roleChoiceUser, setRoleChoiceUser] = useState<User | null>(null);
   const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false);
   const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
+<<<<<<< HEAD
+=======
+  const [supportOpen, setSupportOpen] = useState(false);
+>>>>>>> codex/review-files
   const { toasts, addToast, removeToast } = useToast();
 
   const fetchUser = useCallback(async (preferredRole?: UserRole) => {
     try {
       const res = await api.getMe();
-      const u = profileToUser(res.data, preferredRole ?? currentRole);
+      const u = profileToUser(res.data, preferredRole);
       setUser(u);
       setCurrentRole(u.role);
       return u;
@@ -89,11 +115,15 @@ export default function App() {
       setUser(null);
       return null;
     }
-  }, [currentRole]);
+  }, []);
 
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   useEffect(() => {
     fetchUser().finally(() => setAuthChecked(true));
@@ -185,9 +215,10 @@ export default function App() {
     }
   };
 
-  const handleRoleToggle = () => {
+  const handleRoleSwitch = () => {
     if (!user) return;
     const newRole: UserRole = currentRole === 'creator' ? 'host' : 'creator';
+<<<<<<< HEAD
     if (newRole === 'host' && !user.hostEnabled) {
       setCurrentPage('host-onboarding');
       return;
@@ -204,6 +235,27 @@ export default function App() {
     api.updateMe({ lastRoleUsed: newRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
     setCurrentRole(newRole);
     setUser({ ...user, role: newRole });
+=======
+    if (user.creatorEnabled && user.hostEnabled) {
+      setPendingRole(newRole);
+      setToggleConfirmOpen(true);
+      return;
+    }
+  };
+
+  const handleOpenCreatorAccount = () => {
+    setCurrentPage('creator-onboarding');
+  };
+
+  const handleOpenHostAccount = () => {
+    setCurrentPage('host-onboarding');
+  };
+
+  const handleRoleChangeConfirm = (nextRole: UserRole) => {
+    api.updateMe({ lastRoleUsed: nextRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
+    setCurrentRole(nextRole);
+    if (user) setUser({ ...user, role: nextRole });
+>>>>>>> codex/review-files
     setCurrentPage('dashboard');
   };
 
@@ -389,11 +441,18 @@ export default function App() {
               name: user.name,
               avatar: user.avatar,
               role: currentRole,
+              creatorEnabled: user.creatorEnabled,
+              hostEnabled: user.hostEnabled,
             }}
             currentPage={currentPage}
             onNavigate={handleNavigate}
-            onRoleToggle={handleRoleToggle}
+            onRoleSwitch={handleRoleSwitch}
+            onOpenCreatorAccount={handleOpenCreatorAccount}
+            onOpenHostAccount={handleOpenHostAccount}
             onSettings={() => setShowSettings(true)}
+            onSupport={() => setSupportOpen(true)}
+            onThemeChange={setTheme}
+            theme={theme}
             onLogout={handleLogout}
           />
         )}
@@ -414,6 +473,37 @@ export default function App() {
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
+<<<<<<< HEAD
+=======
+      {supportOpen && (
+        <Modal
+          isOpen={supportOpen}
+          onClose={() => setSupportOpen(false)}
+          title="Chat with Whop"
+          size="sm"
+        >
+          <div className="p-6 space-y-4">
+            <div className="rounded-lg border border-border bg-muted/30 p-4">
+              <p className="text-sm font-semibold">Support thread</p>
+              <p className="text-xs text-muted-foreground">
+                This thread view is a placeholder for the upcoming chat experience.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {['Welcome to Promora support.', 'We will follow up here shortly.', 'Add your request below.'].map((message, index) => (
+                <div key={message} className={`rounded-lg border border-border p-3 text-sm ${index === 2 ? 'bg-background' : 'bg-muted/20'}`}>
+                  {message}
+                </div>
+              ))}
+            </div>
+            <Button className="w-full" variant="outline" onClick={() => setSupportOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+>>>>>>> codex/review-files
       {roleChoiceOpen && roleChoiceUser && (
         <Modal
           isOpen={roleChoiceOpen}
@@ -493,6 +583,7 @@ export default function App() {
                 type="button"
                 className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 onClick={() => {
+<<<<<<< HEAD
                   const nextRole = pendingRole;
                   api.updateMe({ lastRoleUsed: nextRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
                   setCurrentRole(nextRole);
@@ -500,6 +591,11 @@ export default function App() {
                   setToggleConfirmOpen(false);
                   setPendingRole(null);
                   setCurrentPage('dashboard');
+=======
+                  handleRoleChangeConfirm(pendingRole);
+                  setToggleConfirmOpen(false);
+                  setPendingRole(null);
+>>>>>>> codex/review-files
                 }}
               >
                 Continue
