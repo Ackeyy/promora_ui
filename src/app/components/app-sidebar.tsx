@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu';
 import { motion } from 'motion/react';
-import { useState } from 'react';
 
 interface AppSidebarProps {
   user: {
@@ -49,7 +48,6 @@ export function AppSidebar({
   theme,
   onLogout,
 }: AppSidebarProps) {
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'campaigns', label: 'Campaigns', icon: Target },
@@ -140,7 +138,7 @@ export function AppSidebar({
           </div>
         </div>
 
-        <DropdownMenu open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DropdownMenu>
           <div>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="w-full justify-start gap-3 text-sidebar-foreground/80">
@@ -148,7 +146,7 @@ export function AppSidebar({
                 Menu
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="start" className="w-56">
+            <DropdownMenuContent side="top" align="start" sideOffset={8} className="w-56">
               <DropdownMenuItem onClick={onSettings}>
                 <Settings className="mr-2 h-4 w-4" />
                 Account settings
