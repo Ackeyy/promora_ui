@@ -83,32 +83,16 @@ export default function App() {
   const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const [supportOpen, setSupportOpen] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
-  const [creatorCampaigns, setCreatorCampaigns] = useState<CreatorCampaign[]>([
-    {
-      id: 'active-1',
-      name: 'GlowSkin Launch',
-      thumbnail: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800&q=80',
-      rate: 120,
-      earned: 14500,
-      views: 128000,
-      status: 'active',
-      nextCycleDate: 'Feb 3, 2026',
-      canReverify: false,
-      lastActivityAt: '2026-02-01T10:30:00.000Z',
-    },
-    {
-      id: 'active-2',
-      name: 'UrbanFit Summer Drop',
-      thumbnail: 'https://images.unsplash.com/photo-1463100099107-aa0980c362e6?w=800&q=80',
-      rate: 95,
-      earned: 9800,
-      views: 86000,
-      status: 'active',
-      nextCycleDate: 'Feb 6, 2026',
-      canReverify: true,
-      lastActivityAt: '2026-02-02T08:45:00.000Z',
-    },
-  ]);
+  const [creatorCampaigns, setCreatorCampaigns] = useState<CreatorCampaign[]>(() => {
+    if (typeof window === 'undefined') return [];
+    const stored = window.localStorage.getItem('creatorCampaigns');
+    return stored ? (JSON.parse(stored) as CreatorCampaign[]) : [];
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('creatorCampaigns', JSON.stringify(creatorCampaigns));
+  }, [creatorCampaigns]);
 
   const fetchUser = useCallback(async (preferredRole?: UserRole) => {
     try {
