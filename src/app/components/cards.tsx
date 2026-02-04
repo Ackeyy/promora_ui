@@ -14,9 +14,10 @@ interface StatCardProps {
   };
   icon?: React.ReactNode;
   gradient?: boolean;
+  className?: string;
 }
 
-export function StatCard({ title, value, subtitle, trend, icon, gradient = false }: StatCardProps) {
+export function StatCard({ title, value, subtitle, trend, icon, gradient = false, className = '' }: StatCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -27,6 +28,7 @@ export function StatCard({ title, value, subtitle, trend, icon, gradient = false
       <Card className={`
         ${gradient ? 'bg-gradient-to-br from-primary via-primary to-chart-2 text-primary-foreground border-primary' : ''}
         hover:shadow-xl hover:shadow-primary/10 transition-all duration-300
+        ${className}
       `}>
         <CardContent className="p-6">
           <div className="flex items-start justify-between">

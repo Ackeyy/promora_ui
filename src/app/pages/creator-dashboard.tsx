@@ -95,8 +95,8 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
 
       {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="relative">
-          <Card className="hover:shadow-xl hover:shadow-primary/10 transition-all duration-300">
+        <div className="relative h-full">
+          <Card className="h-full hover:shadow-xl hover:shadow-primary/10 transition-all duration-300">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Earnings</CardTitle>
@@ -113,7 +113,7 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
                 </Select>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex h-full flex-col justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-3 rounded-lg bg-gradient-to-br from-primary to-chart-2">
                   <DollarSign className="h-6 w-6 text-white" />
@@ -139,6 +139,7 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
           value={joinedCampaigns.length}
           subtitle="Active campaigns"
           icon={<Target className="h-6 w-6 text-primary" />}
+          className="h-full"
         />
 
         <StatCard
@@ -147,6 +148,7 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
           subtitle="Across all campaigns"
           icon={<Eye className="h-6 w-6 text-primary" />}
           trend={{ value: 0, direction: 'up' }}
+          className="h-full"
         />
       </div>
 
