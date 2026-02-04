@@ -8,30 +8,17 @@ import { useState } from 'react';
 export function HostStats() {
   const [period, setPeriod] = useState('month');
 
-  const spendData = [
-    { date: 'Week 1', spend: 8200, views: 245000 },
-    { date: 'Week 2', spend: 12400, views: 368000 },
-    { date: 'Week 3', spend: 15800, views: 452000 },
-    { date: 'Week 4', spend: 18600, views: 521000 },
-  ];
+  const spendData: Array<{ date: string; spend: number; views: number }> = [];
 
-  const campaignPerformance = [
-    { name: 'Summer Fashion', spend: 65000, views: 1300000, creators: 45, roas: 4.2 },
-    { name: 'Tech Gadget', spend: 42000, views: 850000, creators: 32, roas: 3.8 },
-    { name: 'Fitness Challenge', spend: 28000, views: 580000, creators: 24, roas: 5.1 },
-  ];
+  const campaignPerformance: Array<{ name: string; spend: number; views: number; creators: number; roas: number }> = [];
 
   const platformDistribution = [
-    { name: 'YouTube', value: 45, color: '#ef4444' },
-    { name: 'Instagram', value: 35, color: '#ec4899' },
-    { name: 'Facebook', value: 20, color: '#3b82f6' },
+    { name: 'YouTube', value: 0, color: '#ef4444' },
+    { name: 'Instagram', value: 0, color: '#ec4899' },
+    { name: 'Facebook', value: 0, color: '#3b82f6' },
   ];
 
-  const creatorParticipation = [
-    { campaign: 'Summer Fashion', joined: 45, active: 38, completed: 32 },
-    { campaign: 'Tech Gadget', joined: 32, active: 28, completed: 25 },
-    { campaign: 'Fitness Challenge', joined: 24, active: 22, completed: 19 },
-  ];
+  const creatorParticipation: Array<{ campaign: string; joined: number; active: number; completed: number }> = [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -62,10 +49,10 @@ export function HostStats() {
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {[
-          { label: 'Total Spend', value: '₹68,500', icon: <DollarSign className="h-5 w-5" />, trend: '+15%' },
-          { label: 'Total Views', value: '3M', icon: <Eye className="h-5 w-5" />, trend: '+22%' },
-          { label: 'Active Creators', value: '107', icon: <Users className="h-5 w-5" />, trend: '+8' },
-          { label: 'Campaigns', value: '3', icon: <Target className="h-5 w-5" />, trend: '+1' },
+          { label: 'Total Spend', value: '₹0', icon: <DollarSign className="h-5 w-5" />, trend: '0%' },
+          { label: 'Total Views', value: '0', icon: <Eye className="h-5 w-5" />, trend: '0%' },
+          { label: 'Active Creators', value: '0', icon: <Users className="h-5 w-5" />, trend: '0' },
+          { label: 'Campaigns', value: '0', icon: <Target className="h-5 w-5" />, trend: '0' },
         ].map((stat, i) => (
           <motion.div
             key={i}

@@ -78,6 +78,12 @@ export default function App() {
     fetchUser().finally(() => setAuthChecked(true));
   }, []);
 
+  useEffect(() => {
+    if (authChecked && user?.isOnboarded && currentPage === 'landing') {
+      setCurrentPage('dashboard');
+    }
+  }, [authChecked, user, currentPage]);
+
   const handleLogin = async (email: string, password: string) => {
     const result = await authLogin(email, password);
     if (!result.ok) {
@@ -316,8 +322,8 @@ export default function App() {
   const showSidebar = isAuthenticated && !['creator-onboarding', 'host-onboarding'].includes(currentPage);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="flex">
+    <div className="h-screen bg-background text-foreground overflow-hidden">
+      <div className="flex h-full">
         {showSidebar && user && (
           <AppSidebar
             user={{
@@ -333,7 +339,7 @@ export default function App() {
           />
         )}
 
-        <main className="flex-1 min-h-screen">
+        <main className="flex-1 h-full overflow-y-auto">
           {renderPage()}
         </main>
       </div>
