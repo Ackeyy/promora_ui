@@ -1,6 +1,7 @@
 {
+  "/api/me/route": "app/api/me/route.js",
   "/api/auth/credentials/route": "app/api/auth/credentials/route.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/api/me/onboarding/host/route": "app/api/me/onboarding/host/route.js",
-  "/api/me/route": "app/api/me/route.js"
+  "/api/auth/signup/route": "app/api/auth/signup/route.js",
+  "/api/me/onboarding/host/route": "app/api/me/onboarding/host/route.js"
 }
