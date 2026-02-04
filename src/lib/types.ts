@@ -9,6 +9,9 @@ export interface UserProfile {
   email: string;
   name: string;
   avatarUrl?: string;
+  roleType?: 'ADMIN' | 'USER';
+  modeType?: 'CREATOR' | 'HOST' | 'POLYCODE';
+  lastRoleUsed?: 'CREATOR' | 'HOST';
   roleMode: {
     creatorEnabled: boolean;
     hostEnabled: boolean;

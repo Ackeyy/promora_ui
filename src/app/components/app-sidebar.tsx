@@ -1,28 +1,66 @@
-import { Home, Target, BarChart3, Settings, LogOut, User, ChevronRight } from 'lucide-react';
+import { Home, Target, BarChart3, Settings, LogOut, User, ChevronRight, ArrowLeftRight, UserPlus, HelpCircle, Sun, Moon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/app/components/ui/avatar';
 import { Button } from '@/app/components/ui/button';
-import { Switch } from '@/app/components/ui/switch';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/app/components/ui/dropdown-menu';
 import { motion } from 'motion/react';
+import { useState } from 'react';
 
 interface AppSidebarProps {
   user: {
     name: string;
     avatar?: string;
     role: 'creator' | 'host';
+    creatorEnabled: boolean;
+    hostEnabled: boolean;
   };
   currentPage: string;
   onNavigate: (page: string) => void;
-  onRoleToggle: () => void;
+  onRoleSwitch: () => void;
+  onOpenCreatorAccount: () => void;
+  onOpenHostAccount: () => void;
   onSettings: () => void;
+  onSupport: () => void;
+  onThemeChange: (theme: 'dark' | 'light') => void;
+  theme: 'dark' | 'light';
   onLogout: () => void;
 }
 
-export function AppSidebar({ user, currentPage, onNavigate, onRoleToggle, onSettings, onLogout }: AppSidebarProps) {
+export function AppSidebar({
+  user,
+  currentPage,
+  onNavigate,
+  onRoleSwitch,
+  onOpenCreatorAccount,
+  onOpenHostAccount,
+  onSettings,
+  onSupport,
+  onThemeChange,
+  theme,
+  onLogout,
+}: AppSidebarProps) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'campaigns', label: 'Campaigns', icon: Target },
     { id: 'stats', label: 'Stats', icon: BarChart3 },
   ];
+  const isPolycode = user.creatorEnabled && user.hostEnabled;
+  const roleActionLabel = isPolycode
+    ? `Switch to ${user.role === 'creator' ? 'host' : 'creator'}`
+    : user.role === 'creator'
+      ? 'Open host account?'
+      : 'Open creator account?';
 
   return (
     <motion.div
@@ -45,11 +83,12 @@ export function AppSidebar({ user, currentPage, onNavigate, onRoleToggle, onSett
           </div>
         </div>
 
-        {/* Role Toggle */}
         <div className="flex items-center justify-between p-3 bg-sidebar-accent rounded-lg">
-          <span className="text-sm">Creator</span>
-          <Switch checked={user.role === 'host'} onCheckedChange={onRoleToggle} />
-          <span className="text-sm">Host</span>
+          <div className="flex items-center gap-2 text-sm">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <span className="capitalize">{user.role}</span>
+          </div>
+          <span className="text-xs text-muted-foreground">Current mode</span>
         </div>
       </div>
 
@@ -81,14 +120,68 @@ export function AppSidebar({ user, currentPage, onNavigate, onRoleToggle, onSett
         })}
 
         <div className="pt-4">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3"
-            onClick={onSettings}
-          >
-            <Settings className="h-5 w-5" />
-            Settings
-          </Button>
+          <DropdownMenu open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <div
+              onMouseEnter={() => setSettingsOpen(true)}
+              onMouseLeave={() => setSettingsOpen(false)}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-3"
+                >
+                  <Settings className="h-5 w-5" />
+                  Settings
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="right"
+                align="start"
+                className="w-56"
+                onMouseEnter={() => setSettingsOpen(true)}
+                onMouseLeave={() => setSettingsOpen(false)}
+              >
+                <DropdownMenuItem onClick={onSettings}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Account settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onSupport}>
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  Help & support
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    {theme === 'dark' ? <Moon className="mr-2 h-4 w-4" /> : <Sun className="mr-2 h-4 w-4" />}
+                    Theme
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-40">
+                    <DropdownMenuRadioGroup value={theme} onValueChange={(value) => onThemeChange(value as 'dark' | 'light')}>
+                      <DropdownMenuRadioItem value="light">
+                        <Sun className="mr-2 h-4 w-4" />
+                        Light
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="dark">
+                        <Moon className="mr-2 h-4 w-4" />
+                        Dark
+                      </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={isPolycode ? onRoleSwitch : user.role === 'creator' ? onOpenHostAccount : onOpenCreatorAccount}
+                >
+                  {isPolycode ? <ArrowLeftRight className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                  {roleActionLabel}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </div>
+          </DropdownMenu>
         </div>
       </nav>
 
