@@ -1,11 +1,16 @@
-import { Home, Target, BarChart3, Settings, LogOut, User, ChevronRight, ArrowLeftRight, UserPlus } from 'lucide-react';
+import { Home, Target, BarChart3, Settings, LogOut, User, ChevronRight, ArrowLeftRight, UserPlus, HelpCircle, Sun, Moon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/app/components/ui/avatar';
 import { Button } from '@/app/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/app/components/ui/dropdown-menu';
 import { motion } from 'motion/react';
@@ -25,6 +30,9 @@ interface AppSidebarProps {
   onOpenCreatorAccount: () => void;
   onOpenHostAccount: () => void;
   onSettings: () => void;
+  onSupport: () => void;
+  onThemeChange: (theme: 'dark' | 'light') => void;
+  theme: 'dark' | 'light';
   onLogout: () => void;
 }
 
@@ -36,6 +44,9 @@ export function AppSidebar({
   onOpenCreatorAccount,
   onOpenHostAccount,
   onSettings,
+  onSupport,
+  onThemeChange,
+  theme,
   onLogout,
 }: AppSidebarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -132,14 +143,41 @@ export function AppSidebar({
               >
                 <DropdownMenuItem onClick={onSettings}>
                   <Settings className="mr-2 h-4 w-4" />
-                  Open settings
+                  Account settings
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={onSupport}>
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  Help & support
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    {theme === 'dark' ? <Moon className="mr-2 h-4 w-4" /> : <Sun className="mr-2 h-4 w-4" />}
+                    Theme
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-40">
+                    <DropdownMenuRadioGroup value={theme} onValueChange={(value) => onThemeChange(value as 'dark' | 'light')}>
+                      <DropdownMenuRadioItem value="light">
+                        <Sun className="mr-2 h-4 w-4" />
+                        Light
+                      </DropdownMenuRadioItem>
+                      <DropdownMenuRadioItem value="dark">
+                        <Moon className="mr-2 h-4 w-4" />
+                        Dark
+                      </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={isPolycode ? onRoleSwitch : user.role === 'creator' ? onOpenHostAccount : onOpenCreatorAccount}
                 >
                   {isPolycode ? <ArrowLeftRight className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
                   {roleActionLabel}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </div>

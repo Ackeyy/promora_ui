@@ -16,6 +16,7 @@ import { CreatorStats } from '@/app/pages/creator-stats';
 import { HostStats } from '@/app/pages/host-stats';
 import { SettingsModal } from '@/app/pages/settings-modal';
 import { Modal } from '@/app/components/modal';
+import { Button } from '@/app/components/ui/button';
 import { api } from '@/lib/api';
 import { login as authLogin, logout as authLogout } from '@/lib/auth';
 import type { UserProfile } from '@/lib/types';
@@ -74,10 +75,12 @@ export default function App() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [roleChoiceOpen, setRoleChoiceOpen] = useState(false);
   const [roleChoiceUser, setRoleChoiceUser] = useState<User | null>(null);
   const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false);
   const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
+  const [supportOpen, setSupportOpen] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
 
   const fetchUser = useCallback(async (preferredRole?: UserRole) => {
@@ -94,8 +97,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   useEffect(() => {
     fetchUser().finally(() => setAuthChecked(true));
@@ -403,6 +410,9 @@ export default function App() {
             onOpenCreatorAccount={handleOpenCreatorAccount}
             onOpenHostAccount={handleOpenHostAccount}
             onSettings={() => setShowSettings(true)}
+            onSupport={() => setSupportOpen(true)}
+            onThemeChange={setTheme}
+            theme={theme}
             onLogout={handleLogout}
           />
         )}
@@ -422,6 +432,34 @@ export default function App() {
       )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {supportOpen && (
+        <Modal
+          isOpen={supportOpen}
+          onClose={() => setSupportOpen(false)}
+          title="Chat with Whop"
+          size="sm"
+        >
+          <div className="p-6 space-y-4">
+            <div className="rounded-lg border border-border bg-muted/30 p-4">
+              <p className="text-sm font-semibold">Support thread</p>
+              <p className="text-xs text-muted-foreground">
+                This thread view is a placeholder for the upcoming chat experience.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {['Welcome to Promora support.', 'We will follow up here shortly.', 'Add your request below.'].map((message, index) => (
+                <div key={message} className={`rounded-lg border border-border p-3 text-sm ${index === 2 ? 'bg-background' : 'bg-muted/20'}`}>
+                  {message}
+                </div>
+              ))}
+            </div>
+            <Button className="w-full" variant="outline" onClick={() => setSupportOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </Modal>
+      )}
 
       {roleChoiceOpen && roleChoiceUser && (
         <Modal
