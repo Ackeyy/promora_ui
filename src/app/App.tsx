@@ -136,13 +136,14 @@ export default function App() {
       }
       const u = await fetchUser();
       if (u) {
-        if (u.creatorEnabled && u.hostEnabled) {
-          setRoleChoiceUser(u);
-          setRoleChoiceOpen(true);
-          addToast('Choose how you want to proceed.', 'info');
-          return;
-        }
-        setCurrentRole(u.role);
+        const loginRole: UserRole =
+          u.hostEnabled && !u.creatorEnabled
+            ? 'host'
+            : u.creatorEnabled && !u.hostEnabled
+              ? 'creator'
+              : u.lastRoleUsed ?? u.role;
+        setCurrentRole(loginRole);
+        setUser({ ...u, role: loginRole });
         if (redirectAfterAuth) {
           setCurrentPage(redirectAfterAuth as Page);
           setRedirectAfterAuth(null);
