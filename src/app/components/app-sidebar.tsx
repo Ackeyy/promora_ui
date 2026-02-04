@@ -1,19 +1,9 @@
 import { Home, Target, BarChart3, Settings, LogOut, User, ChevronRight, ArrowLeftRight, UserPlus, HelpCircle, Sun, Moon, Search, Menu } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/app/components/ui/avatar';
 import { Button } from '@/app/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from '@/app/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
 import { motion } from 'motion/react';
+import { useState } from 'react';
 
 interface AppSidebarProps {
   user: {
@@ -48,6 +38,7 @@ export function AppSidebar({
   theme,
   onLogout,
 }: AppSidebarProps) {
+  const [menuAction, setMenuAction] = useState('');
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'campaigns', label: 'Campaigns', icon: Target },
@@ -59,6 +50,37 @@ export function AppSidebar({
     : user.role === 'creator'
       ? 'Open host account?'
       : 'Open creator account?';
+  const handleMenuAction = (value: string) => {
+    switch (value) {
+      case 'settings':
+        onSettings();
+        break;
+      case 'support':
+        onSupport();
+        break;
+      case 'theme-light':
+        onThemeChange('light');
+        break;
+      case 'theme-dark':
+        onThemeChange('dark');
+        break;
+      case 'role':
+        if (isPolycode) {
+          onRoleSwitch();
+        } else if (user.role === 'creator') {
+          onOpenHostAccount();
+        } else {
+          onOpenCreatorAccount();
+        }
+        break;
+      case 'logout':
+        onLogout();
+        break;
+      default:
+        break;
+    }
+    setMenuAction('');
+  };
 
   return (
     <motion.div
@@ -138,56 +160,34 @@ export function AppSidebar({
           </div>
         </div>
 
-        <DropdownMenu>
-          <div>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start gap-3 text-sidebar-foreground/80">
-                <Menu className="h-4 w-4" />
-                Menu
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="start" sideOffset={8} className="w-56">
-              <DropdownMenuItem onClick={onSettings}>
-                <Settings className="mr-2 h-4 w-4" />
-                Account settings
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onSupport}>
-                <HelpCircle className="mr-2 h-4 w-4" />
-                Help & support
-              </DropdownMenuItem>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  {theme === 'dark' ? <Moon className="mr-2 h-4 w-4" /> : <Sun className="mr-2 h-4 w-4" />}
-                  Theme
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="w-40">
-                  <DropdownMenuRadioGroup value={theme} onValueChange={(value) => onThemeChange(value as 'dark' | 'light')}>
-                    <DropdownMenuRadioItem value="light">
-                      <Sun className="mr-2 h-4 w-4" />
-                      Light
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="dark">
-                      <Moon className="mr-2 h-4 w-4" />
-                      Dark
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={isPolycode ? onRoleSwitch : user.role === 'creator' ? onOpenHostAccount : onOpenCreatorAccount}
-              >
-                {isPolycode ? <ArrowLeftRight className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                {roleActionLabel}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </div>
-        </DropdownMenu>
+        <Select value={menuAction} onValueChange={handleMenuAction}>
+          <SelectTrigger className="w-full justify-start gap-3 border border-sidebar-border bg-transparent text-sidebar-foreground/80">
+            <Menu className="h-4 w-4" />
+            <SelectValue placeholder="Menu" />
+          </SelectTrigger>
+          <SelectContent side="top" align="start">
+            <SelectItem value="settings">
+              <Settings className="h-4 w-4" />
+              Account settings
+            </SelectItem>
+            <SelectItem value="support">
+              <HelpCircle className="h-4 w-4" />
+              Help & support
+            </SelectItem>
+            <SelectItem value={theme === 'dark' ? 'theme-light' : 'theme-dark'}>
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
+            </SelectItem>
+            <SelectItem value="role">
+              {isPolycode ? <ArrowLeftRight className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+              {roleActionLabel}
+            </SelectItem>
+            <SelectItem value="logout">
+              <LogOut className="h-4 w-4" />
+              Log out
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </motion.div>
   );
