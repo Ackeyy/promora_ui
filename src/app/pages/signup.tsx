@@ -10,9 +10,10 @@ import type { UserRole } from '@/app/App';
 interface SignupPageProps {
   onSignup: (email: string, password: string, role: UserRole) => void;
   onNavigate: (page: string) => void;
+  isLoading?: boolean;
 }
 
-export function SignupPage({ onSignup, onNavigate }: SignupPageProps) {
+export function SignupPage({ onSignup, onNavigate, isLoading }: SignupPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole>('creator');
@@ -89,6 +90,14 @@ export function SignupPage({ onSignup, onNavigate }: SignupPageProps) {
         <div className="relative">
           <div className="absolute -inset-1 bg-gradient-to-r from-primary to-chart-2 rounded-2xl blur-xl opacity-20" />
           <div className="relative bg-card border border-border rounded-2xl p-8 shadow-2xl">
+            {isLoading && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/70 backdrop-blur-sm">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  Creating account...
+                </div>
+              </div>
+            )}
             {/* Logo */}
             <div className="text-center mb-8">
               <motion.h1
@@ -180,12 +189,12 @@ export function SignupPage({ onSignup, onNavigate }: SignupPageProps) {
 
               <Button
                 type="submit"
-                disabled={!agreedToTerms}
+                disabled={!agreedToTerms || isLoading}
                 className="w-full bg-gradient-to-r from-primary to-chart-2 hover:shadow-lg hover:shadow-primary/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 size="lg"
               >
                 <UserPlus className="mr-2 h-5 w-5" />
-                Create Account
+                {isLoading ? 'Creating account...' : 'Create Account'}
               </Button>
             </form>
 

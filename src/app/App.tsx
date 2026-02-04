@@ -70,8 +70,12 @@ export default function App() {
   const [redirectAfterAuth, setRedirectAfterAuth] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const [roleChoiceOpen, setRoleChoiceOpen] = useState(false);
   const [roleChoiceUser, setRoleChoiceUser] = useState<User | null>(null);
+  const [toggleConfirmOpen, setToggleConfirmOpen] = useState(false);
+  const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const { toasts, addToast, removeToast } = useToast();
 
   const fetchUser = useCallback(async (preferredRole?: UserRole) => {
@@ -103,38 +107,44 @@ export default function App() {
 
   const handleLogin = async (email: string, password: string) => {
     setLoginError(null);
-    const result = await authLogin(email, password);
-    if (!result.ok) {
-      const message = result.errorCode === 'USER_NOT_FOUND'
-        ? "User doesn't exist."
-        : result.errorCode === 'INVALID_PASSWORD'
-          ? "User's password is wrong."
-          : 'Unexpected error. Try again.';
-      setLoginError(message);
-      return;
-    }
-    const u = await fetchUser();
-    if (u) {
-      if (u.creatorEnabled && u.hostEnabled) {
-        setRoleChoiceUser(u);
-        setRoleChoiceOpen(true);
-        addToast('Choose how you want to proceed.', 'info');
+    setIsLoggingIn(true);
+    try {
+      const result = await authLogin(email, password);
+      if (!result.ok) {
+        const message = result.errorCode === 'USER_NOT_FOUND'
+          ? "User doesn't exist."
+          : result.errorCode === 'INVALID_PASSWORD'
+            ? "User's password is wrong."
+            : 'Unexpected error. Try again.';
+        setLoginError(message);
         return;
       }
-      setCurrentRole(u.role);
-      if (redirectAfterAuth) {
-        setCurrentPage(redirectAfterAuth as Page);
-        setRedirectAfterAuth(null);
+      const u = await fetchUser();
+      if (u) {
+        if (u.creatorEnabled && u.hostEnabled) {
+          setRoleChoiceUser(u);
+          setRoleChoiceOpen(true);
+          addToast('Choose how you want to proceed.', 'info');
+          return;
+        }
+        setCurrentRole(u.role);
+        if (redirectAfterAuth) {
+          setCurrentPage(redirectAfterAuth as Page);
+          setRedirectAfterAuth(null);
+        } else {
+          setCurrentPage('dashboard');
+        }
+        addToast('Welcome back!', 'success');
       } else {
-        setCurrentPage('dashboard');
+        addToast('Could not load profile', 'error');
       }
-      addToast('Welcome back!', 'success');
-    } else {
-      addToast('Could not load profile', 'error');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
   const handleSignup = async (email: string, password: string, role: UserRole) => {
+    setIsSigningUp(true);
     try {
       await api.signup({ email, password, role });
       const result = await authLogin(email, password);
@@ -157,6 +167,8 @@ export default function App() {
     } catch (e: unknown) {
       const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Signup failed';
       addToast(msg, 'error');
+    } finally {
+      setIsSigningUp(false);
     }
   };
 
@@ -176,10 +188,17 @@ export default function App() {
   const handleRoleToggle = () => {
     if (!user) return;
     const newRole: UserRole = currentRole === 'creator' ? 'host' : 'creator';
-    if (newRole === 'host' && !user.isHostVerified) {
+    if (newRole === 'host' && !user.hostEnabled) {
       setCurrentPage('host-onboarding');
-      setUser({ ...user, role: newRole });
-      setCurrentRole(newRole);
+      return;
+    }
+    if (newRole === 'creator' && !user.creatorEnabled) {
+      setCurrentPage('creator-onboarding');
+      return;
+    }
+    if (user.creatorEnabled && user.hostEnabled) {
+      setPendingRole(newRole);
+      setToggleConfirmOpen(true);
       return;
     }
     api.updateMe({ lastRoleUsed: newRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
@@ -239,11 +258,12 @@ export default function App() {
           onNavigate={setCurrentPage}
           errorMessage={loginError}
           onClearError={() => setLoginError(null)}
+          isLoading={isLoggingIn}
         />
       );
     }
     if (currentPage === 'signup') {
-      return <SignupPage onSignup={handleSignup} onNavigate={setCurrentPage} />;
+      return <SignupPage onSignup={handleSignup} onNavigate={setCurrentPage} isLoading={isSigningUp} />;
     }
 
     // Onboarding
@@ -438,6 +458,51 @@ export default function App() {
               >
                 <span className="block font-semibold">Host</span>
                 <span className="block text-xs text-muted-foreground">Manage campaigns and creator payouts.</span>
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {toggleConfirmOpen && pendingRole && (
+        <Modal
+          isOpen={toggleConfirmOpen}
+          onClose={() => {
+            setToggleConfirmOpen(false);
+            setPendingRole(null);
+          }}
+          title="Switch role?"
+          size="sm"
+        >
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              You&apos;re about to switch to the {pendingRole} dashboard. Continue?
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="flex-1 rounded-lg border border-border bg-background px-4 py-2 text-sm transition-colors hover:border-primary/60 hover:bg-primary/5"
+                onClick={() => {
+                  setToggleConfirmOpen(false);
+                  setPendingRole(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                onClick={() => {
+                  const nextRole = pendingRole;
+                  api.updateMe({ lastRoleUsed: nextRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
+                  setCurrentRole(nextRole);
+                  if (user) setUser({ ...user, role: nextRole });
+                  setToggleConfirmOpen(false);
+                  setPendingRole(null);
+                  setCurrentPage('dashboard');
+                }}
+              >
+                Continue
               </button>
             </div>
           </div>
