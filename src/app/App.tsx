@@ -45,7 +45,10 @@ function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
       : p.modeType === 'CREATOR'
         ? 'creator'
         : undefined;
-  const polycodeRole = preferredRole ?? lastRole ?? 'creator';
+  const polycodeRole =
+    preferredRole ??
+    lastRole ??
+    (p.roleMode.hostEnabled && !p.roleMode.creatorEnabled ? 'host' : 'creator');
   const role: UserRole =
     p.modeType === 'POLYCODE'
       ? polycodeRole
