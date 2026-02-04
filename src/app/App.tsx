@@ -46,11 +46,17 @@ function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
       : p.modeType === 'CREATOR'
         ? 'creator'
         : undefined;
-  const polycodeRole = preferredRole ?? lastRole ?? 'creator';
+  const roleModeDefault: UserRole | undefined =
+    p.roleMode.hostEnabled && !p.roleMode.creatorEnabled
+      ? 'host'
+      : p.roleMode.creatorEnabled && !p.roleMode.hostEnabled
+        ? 'creator'
+        : undefined;
+  const polycodeRole = preferredRole ?? lastRole ?? roleModeDefault ?? 'creator';
   const role: UserRole =
     p.modeType === 'POLYCODE'
       ? polycodeRole
-      : modeRole ?? (p.roleMode.hostEnabled ? 'host' : 'creator');
+      : roleModeDefault ?? modeRole ?? (p.roleMode.hostEnabled ? 'host' : 'creator');
   return {
     id: p.id,
     name: p.name ?? p.email,
@@ -141,13 +147,14 @@ export default function App() {
       }
       const u = await fetchUser();
       if (u) {
-        if (u.creatorEnabled && u.hostEnabled) {
-          setRoleChoiceUser(u);
-          setRoleChoiceOpen(true);
-          addToast('Choose how you want to proceed.', 'info');
-          return;
-        }
-        setCurrentRole(u.role);
+        const loginRole: UserRole =
+          u.hostEnabled && !u.creatorEnabled
+            ? 'host'
+            : u.creatorEnabled && !u.hostEnabled
+              ? 'creator'
+              : u.lastRoleUsed ?? u.role;
+        setCurrentRole(loginRole);
+        setUser({ ...u, role: loginRole });
         if (redirectAfterAuth) {
           setCurrentPage(redirectAfterAuth as Page);
           setRedirectAfterAuth(null);
