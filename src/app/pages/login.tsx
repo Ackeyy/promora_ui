@@ -10,9 +10,10 @@ interface LoginPageProps {
   onNavigate: (page: string) => void;
   errorMessage?: string | null;
   onClearError?: () => void;
+  isLoading?: boolean;
 }
 
-export function LoginPage({ onLogin, onNavigate, errorMessage, onClearError }: LoginPageProps) {
+export function LoginPage({ onLogin, onNavigate, errorMessage, onClearError, isLoading }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -72,6 +73,14 @@ export function LoginPage({ onLogin, onNavigate, errorMessage, onClearError }: L
         <div className="relative">
           <div className="absolute -inset-1 bg-gradient-to-r from-primary to-chart-2 rounded-2xl blur-xl opacity-20" />
           <div className="relative bg-card border border-border rounded-2xl p-8 shadow-2xl">
+            {isLoading && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/70 backdrop-blur-sm">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  Logging in...
+                </div>
+              </div>
+            )}
             {/* Logo */}
             <div className="text-center mb-8">
               <motion.h1
@@ -125,11 +134,12 @@ export function LoginPage({ onLogin, onNavigate, errorMessage, onClearError }: L
 
               <Button
                 type="submit"
+                disabled={isLoading}
                 className="w-full bg-gradient-to-r from-primary to-chart-2 hover:shadow-lg hover:shadow-primary/50 transition-all"
                 size="lg"
               >
                 <LogIn className="mr-2 h-5 w-5" />
-                Login
+                {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
 
