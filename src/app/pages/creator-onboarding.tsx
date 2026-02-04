@@ -5,12 +5,14 @@ import { Input } from '@/app/components/ui/input';
 import { Checkbox } from '@/app/components/ui/checkbox';
 import { ArrowRight, Youtube, Instagram, Facebook, Sparkles, Video, Image as ImageIcon, Music } from 'lucide-react';
 import { useState } from 'react';
+import { api } from '@/lib/api';
 
 interface CreatorOnboardingProps {
   onComplete: () => void;
+  onToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export function CreatorOnboarding({ onComplete }: CreatorOnboardingProps) {
+export function CreatorOnboarding({ onComplete, onToast }: CreatorOnboardingProps) {
   const [step, setStep] = useState(1);
   const [contentTypes, setContentTypes] = useState<string[]>([]);
   const [platforms, setPlatforms] = useState<string[]>([]);
@@ -19,6 +21,7 @@ export function CreatorOnboarding({ onComplete }: CreatorOnboardingProps) {
     instagram: '',
     facebook: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const contentTypeOptions = [
     { id: 'reels', label: 'Reels/Shorts', icon: <Video className="h-5 w-5" /> },
@@ -46,11 +49,27 @@ export function CreatorOnboarding({ onComplete }: CreatorOnboardingProps) {
     );
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < 3) {
       setStep(step + 1);
     } else {
-      onComplete();
+      setIsSubmitting(true);
+      try {
+        await api.submitCreatorOnboarding({
+          platforms: platforms.map((p) =>
+            p.toUpperCase()
+              .replace(/^YT$/i, 'YOUTUBE')
+              .replace(/^IG$/i, 'INSTAGRAM')
+              .replace(/^FB$/i, 'FACEBOOK'),
+          ),
+          contentTypes,
+        });
+        onComplete();
+      } catch (e) {
+        onToast?.(e instanceof Error ? e.message : 'Failed to save', 'error');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
