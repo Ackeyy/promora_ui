@@ -8,6 +8,8 @@ async function main() {
   const adminPassword = process.env.ADMIN_PASSWORD ?? 'AdminPassword123!';
   const hostEmail = process.env.SAMPLE_HOST_EMAIL ?? 'host@promora.com';
   const amplifierEmail = process.env.SAMPLE_AMPLIFIER_EMAIL ?? 'amplifier@promora.com';
+  const host1Email = 'host1@promora.com';
+  const host2Email = 'host2@promora.com';
   const samplePassword = process.env.SAMPLE_PASSWORD ?? 'Password123!';
 
   const adminHash = await hash(adminPassword, 10);
@@ -56,6 +58,52 @@ async function main() {
     update: {},
   });
 
+  const host1 = await prisma.user.upsert({
+    where: { email: host1Email },
+    create: {
+      email: host1Email,
+      name: 'Host One',
+      passwordHash: sampleHash,
+    },
+    update: {},
+  });
+  await prisma.profile.upsert({
+    where: { userId: host1.id },
+    create: {
+      userId: host1.id,
+      hostEnabled: true,
+      creatorEnabled: false,
+      onboardingDone: true,
+      companyName: 'Verified Studio',
+      website: 'https://verified-studio.example',
+      verifiedBadge: true,
+    },
+    update: { verifiedBadge: true },
+  });
+
+  const host2 = await prisma.user.upsert({
+    where: { email: host2Email },
+    create: {
+      email: host2Email,
+      name: 'Host Two',
+      passwordHash: sampleHash,
+    },
+    update: {},
+  });
+  await prisma.profile.upsert({
+    where: { userId: host2.id },
+    create: {
+      userId: host2.id,
+      hostEnabled: true,
+      creatorEnabled: false,
+      onboardingDone: true,
+      companyName: 'Unverified Media',
+      website: 'https://unverified-media.example',
+      verifiedBadge: false,
+    },
+    update: { verifiedBadge: false },
+  });
+
   const creator = await prisma.user.upsert({
     where: { email: amplifierEmail },
     create: {
@@ -77,7 +125,64 @@ async function main() {
     update: {},
   });
 
-  console.log('Seed done:', { admin: admin.email, host: host.email, creator: creator.email });
+  await prisma.campaign.deleteMany({});
+
+  await prisma.campaign.createMany({
+    data: [
+      {
+        hostId: host1.id,
+        title: 'Sample with verify',
+        description: 'Showcase our verified host campaign with authentic content and clean visuals.',
+        thumbnail: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=1200&q=80',
+        videoUrl: 'https://youtube.com/watch?v=verified',
+        campaignType: 'product',
+        productType: 'Tech & Gadgets',
+        productLink: 'https://verified-studio.example/product',
+        reviewContent: true,
+        platforms: ['YOUTUBE', 'INSTAGRAM'],
+        platformRates: { youtube: 7500, instagram: 3500 },
+        ratePer1kViewsPaise: 3500,
+        tags: ['Tech', 'Product'],
+        requirements: ['Minimum 5k followers', 'Use product tag', 'Submit within 48 hours'],
+        status: 'ACTIVE',
+        budgetTotalPaise: 15000000,
+        budgetReservedPaise: 2000000,
+        budgetSpentPaise: 3500000,
+        startAt: new Date(),
+        endAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+      {
+        hostId: host2.id,
+        title: 'Sample with unverify',
+        description: 'Launch a creator-first campaign with fresh visuals and honest storytelling.',
+        thumbnail: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=1200&q=80',
+        videoUrl: 'https://youtube.com/watch?v=unverified',
+        campaignType: 'product',
+        productType: 'Fashion & Apparel',
+        productLink: 'https://unverified-media.example/collection',
+        reviewContent: false,
+        platforms: ['INSTAGRAM', 'FACEBOOK'],
+        platformRates: { instagram: 3000, facebook: 3000 },
+        ratePer1kViewsPaise: 3000,
+        tags: ['Fashion', 'Lifestyle'],
+        requirements: ['Show product in natural light', 'Mention campaign hashtag', 'No competing brands'],
+        status: 'ACTIVE',
+        budgetTotalPaise: 9000000,
+        budgetReservedPaise: 1000000,
+        budgetSpentPaise: 2500000,
+        startAt: new Date(),
+        endAt: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
+      },
+    ],
+  });
+
+  console.log('Seed done:', {
+    admin: admin.email,
+    host: host.email,
+    host1: host1.email,
+    host2: host2.email,
+    creator: creator.email,
+  });
 }
 
 main()

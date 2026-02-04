@@ -26,6 +26,7 @@ export function CampaignCreate({ onComplete, onCancel, onToast }: CampaignCreate
     type: 'product',
     productType: '',
     productLink: '',
+    requirements: '',
     platforms: [] as string[],
     rates: {
       youtube: 70,
@@ -82,11 +83,30 @@ export function CampaignCreate({ onComplete, onCancel, onToast }: CampaignCreate
     setIsSubmitting(true);
     try {
       const budgetPaise = Math.round(Number(campaignData.budget) * 100);
+      const requirements = campaignData.requirements
+        .split('\n')
+        .map((req) => req.trim())
+        .filter(Boolean);
+      const tags = [
+        campaignData.type === 'product' ? 'Product' : undefined,
+        campaignData.productType || undefined,
+      ].filter(Boolean) as string[];
+      const platformRates = Object.fromEntries(
+        Object.entries(campaignData.rates).map(([platform, rate]) => [platform, Math.round(rate * 100)])
+      );
       const response = await api.createCampaign({
         title: campaignData.name,
         description: campaignData.description,
         thumbnail: campaignData.thumbnail || undefined,
+        videoUrl: campaignData.video || undefined,
+        campaignType: campaignData.type,
+        productType: campaignData.productType || undefined,
+        productLink: campaignData.productLink || undefined,
+        reviewContent: campaignData.reviewContent,
         platforms: campaignData.platforms,
+        platformRates,
+        requirements,
+        tags,
         ratePer1kViewsPaise: Math.round(
           Math.min(...campaignData.platforms.map((platform) => campaignData.rates[platform as keyof typeof campaignData.rates])) * 100
         ),
@@ -106,11 +126,30 @@ export function CampaignCreate({ onComplete, onCancel, onToast }: CampaignCreate
   const handleDraft = async () => {
     setIsSavingDraft(true);
     try {
+      const requirements = campaignData.requirements
+        .split('\n')
+        .map((req) => req.trim())
+        .filter(Boolean);
+      const tags = [
+        campaignData.type === 'product' ? 'Product' : undefined,
+        campaignData.productType || undefined,
+      ].filter(Boolean) as string[];
+      const platformRates = Object.fromEntries(
+        Object.entries(campaignData.rates).map(([platform, rate]) => [platform, Math.round(rate * 100)])
+      );
       await api.createCampaign({
         title: campaignData.name,
         description: campaignData.description,
         thumbnail: campaignData.thumbnail || undefined,
+        videoUrl: campaignData.video || undefined,
+        campaignType: campaignData.type,
+        productType: campaignData.productType || undefined,
+        productLink: campaignData.productLink || undefined,
+        reviewContent: campaignData.reviewContent,
         platforms: campaignData.platforms,
+        platformRates,
+        requirements,
+        tags,
         ratePer1kViewsPaise: Math.round(
           Math.min(...campaignData.platforms.map((platform) => campaignData.rates[platform as keyof typeof campaignData.rates])) * 100
         ),
@@ -294,6 +333,17 @@ export function CampaignCreate({ onComplete, onCancel, onToast }: CampaignCreate
                   value={campaignData.productLink}
                   onChange={(e) => setCampaignData({ ...campaignData, productLink: e.target.value })}
                   className="bg-background"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="requirements">Requirements</Label>
+                <Textarea
+                  id="requirements"
+                  placeholder="One requirement per line (e.g., Minimum 5k followers)"
+                  value={campaignData.requirements}
+                  onChange={(e) => setCampaignData({ ...campaignData, requirements: e.target.value })}
+                  className="bg-background min-h-28"
                 />
               </div>
             </motion.div>

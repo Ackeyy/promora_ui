@@ -9,9 +9,17 @@ export async function createCampaign(hostId: string, input: CreateCampaignInput)
       title: input.title,
       description: input.description,
       thumbnail: input.thumbnail || undefined,
+      videoUrl: input.videoUrl || undefined,
+      campaignType: input.campaignType || undefined,
+      productType: input.productType || undefined,
+      productLink: input.productLink || undefined,
+      reviewContent: input.reviewContent ?? false,
       platforms: input.platforms,
+      platformRates: input.platformRates ?? undefined,
       ratePer1kViewsPaise: input.ratePer1kViewsPaise,
-      budgetTotalPaise: 0,
+      tags: input.tags ?? [],
+      requirements: input.requirements ?? [],
+      budgetTotalPaise: input.budgetTotalPaise ?? 0,
       status: 'DRAFT',
       startAt: input.startAt ? new Date(input.startAt) : undefined,
       endAt: input.endAt ? new Date(input.endAt) : undefined,
@@ -36,9 +44,17 @@ export async function depositCampaignBudget(
       const existing = await tx.ledgerEntry.findUnique({ where: { idempotencyKey } });
       if (existing) return { campaign: await tx.campaign.findUniqueOrThrow({ where: { id: campaignId } }), existing: true };
     }
+    const shouldSkipIncrement =
+      campaign.status === 'DRAFT' &&
+      campaign.budgetTotalPaise > 0 &&
+      campaign.budgetTotalPaise === amountPaise;
     await tx.campaign.update({
       where: { id: campaignId },
-      data: { budgetTotalPaise: campaign.budgetTotalPaise + amountPaise },
+      data: {
+        budgetTotalPaise: shouldSkipIncrement
+          ? campaign.budgetTotalPaise
+          : campaign.budgetTotalPaise + amountPaise,
+      },
     });
     await tx.ledgerEntry.create({
       data: {

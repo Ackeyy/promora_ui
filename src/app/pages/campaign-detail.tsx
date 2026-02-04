@@ -7,10 +7,17 @@ import { Modal } from '@/app/components/modal';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { Checkbox } from '@/app/components/ui/checkbox';
-import { ArrowLeft, Eye, Users, DollarSign, Calendar, CheckCircle, Youtube, Instagram, Facebook, Upload } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, Eye, Users, DollarSign, Calendar, CheckCircle, Youtube, Instagram, Facebook } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
+import type { Campaign, UserProfile } from '@/lib/types';
 import type { ToastType } from '@/app/components/toast';
+
+const PLATFORM_ICON_MAP = {
+  youtube: <Youtube className="h-4 w-4" />,
+  instagram: <Instagram className="h-4 w-4" />,
+  facebook: <Facebook className="h-4 w-4" />,
+};
 
 interface CampaignDetailProps {
   campaignId: string;
@@ -30,43 +37,64 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
     facebook: '',
   });
   const [isJoining, setIsJoining] = useState(false);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock campaign data
-  const campaign = {
-    id: campaignId,
-    name: 'Summer Fashion Collection 2026',
-    description: 'Promote our latest summer collection featuring trendy outfits, vibrant colors, and sustainable fashion. We\'re looking for creators who can showcase our products in authentic, engaging ways that resonate with Gen-Z audiences.',
-    thumbnail: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&q=80',
-    host: 'FashionCo',
-    verified: true,
-    tags: ['Fashion', 'Trending', 'Summer'],
-    ratePerView: 50,
-    budget: 100000,
-    spent: 65000,
-    approvalRate: 92,
-    views: 1300000,
-    creators: 45,
-    platforms: [
-      { id: 'youtube', name: 'YouTube', rate: 70, icon: <Youtube className="h-5 w-5" />, color: 'text-red-500' },
-      { id: 'instagram', name: 'Instagram', rate: 50, icon: <Instagram className="h-5 w-5" />, color: 'text-pink-500' },
-    ],
-    requirements: [
-      'Minimum 5k followers on selected platform',
-      'Content should be authentic and engaging',
-      'Follow brand guidelines provided',
-      'Post within 48 hours of approval',
-    ],
-    duration: {
-      start: '2026-01-15',
-      end: '2026-03-15',
-    },
-  };
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    api.getCampaign(campaignId)
+      .then((res) => {
+        if (isMounted) setCampaign(res.data);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [campaignId]);
 
-  const platformIcons = {
-    youtube: <Youtube className="h-4 w-4" />,
-    instagram: <Instagram className="h-4 w-4" />,
-    facebook: <Facebook className="h-4 w-4" />,
-  };
+  useEffect(() => {
+    if (userRole !== 'creator') return;
+    api.getMe()
+      .then((res) => setProfile(res.data))
+      .catch(() => {});
+  }, [userRole]);
+
+  useEffect(() => {
+    if (!joinModal || !profile?.creatorHandles) return;
+    setHandles((prev) => ({
+      youtube: prev.youtube || profile.creatorHandles?.youtube || '',
+      instagram: prev.instagram || profile.creatorHandles?.instagram || '',
+      facebook: prev.facebook || profile.creatorHandles?.facebook || '',
+    }));
+  }, [joinModal, profile]);
+
+  const formattedPlatforms = useMemo(() => {
+    if (!campaign) return [];
+    const platformRates = campaign.platformRates ?? {};
+    return campaign.platforms.map((platform) => {
+      const id = platform.toLowerCase();
+      return {
+        id,
+        name: platform
+          .toLowerCase()
+          .replace('youtube', 'YouTube')
+          .replace('instagram', 'Instagram')
+          .replace('facebook', 'Facebook'),
+        rate: Math.round((platformRates[id] ?? campaign.ratePer1kViewsPaise) / 100),
+        icon: PLATFORM_ICON_MAP[id as keyof typeof PLATFORM_ICON_MAP],
+        color:
+          id === 'youtube'
+            ? 'text-red-500'
+            : id === 'instagram'
+              ? 'text-pink-500'
+              : 'text-blue-500',
+      };
+    });
+  }, [campaign]);
 
   const handleJoinClick = () => {
     if (userRole === 'creator') {
@@ -77,9 +105,14 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
   const handleJoinConfirm = async () => {
     setIsJoining(true);
     try {
+      const selectedHandles = Object.fromEntries(
+        selectedPlatforms
+          .map((platform) => [platform, handles[platform as keyof typeof handles]?.trim()])
+          .filter(([, value]) => value)
+      ) as Record<string, string>;
       await api.joinCampaign(campaignId, {
         platforms: selectedPlatforms,
-        handles,
+        handles: selectedHandles,
       });
       onJoin(campaignId);
       onToast('Request sent to join campaign.', 'success');
@@ -97,13 +130,26 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
     );
   };
 
+  const isJoinDisabled =
+    selectedPlatforms.length === 0 ||
+    selectedPlatforms.some((platform) => !handles[platform as keyof typeof handles]?.trim()) ||
+    isJoining;
+
+  if (isLoading || !campaign) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading campaign...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
       <div className="relative h-96 overflow-hidden">
         <img
-          src={campaign.thumbnail}
-          alt={campaign.name}
+          src={campaign.thumbnail ?? 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&q=80'}
+          alt={campaign.title}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
@@ -123,17 +169,17 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    {campaign.tags.map((tag) => (
+                    {(campaign.tags ?? []).map((tag) => (
                       <Badge key={tag} className="bg-primary/90 backdrop-blur">
                         {tag}
                       </Badge>
                     ))}
                   </div>
-                  <h1 className="text-5xl font-bold mb-3">{campaign.name}</h1>
+                  <h1 className="text-5xl font-bold mb-3">{campaign.title}</h1>
                   <div className="flex items-center gap-2 text-lg">
                     <span className="text-muted-foreground">by</span>
-                    <span className="font-semibold">{campaign.host}</span>
-                    {campaign.verified && (
+                    <span className="font-semibold">{campaign.host?.name ?? 'Host'}</span>
+                    {campaign.host?.verifiedBadge && (
                       <Badge className="bg-blue-500">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Verified
@@ -188,7 +234,7 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
             >
               <h2 className="text-2xl font-bold mb-4">Platforms & Rates</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {campaign.platforms.map((platform) => (
+                {formattedPlatforms.map((platform) => (
                   <Card key={platform.id} className="border-border hover:border-primary/50 transition-all">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-3">
@@ -213,14 +259,18 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
               <h2 className="text-2xl font-bold mb-4">Requirements</h2>
               <Card>
                 <CardContent className="p-6">
-                  <ul className="space-y-3">
-                    {campaign.requirements.map((req, i) => (
-                      <li key={i} className="flex items-start gap-3">
-                        <CheckCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-muted-foreground">{req}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {(campaign.requirements?.length ?? 0) > 0 ? (
+                    <ul className="space-y-3">
+                      {campaign.requirements?.map((req, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <CheckCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                          <span className="text-muted-foreground">{req}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-muted-foreground">No additional requirements listed.</p>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -241,7 +291,7 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
                       <Eye className="h-4 w-4" />
                       Total Views
                     </div>
-                    <p className="text-3xl font-bold">{(campaign.views / 1000000).toFixed(1)}M</p>
+                    <p className="text-3xl font-bold">0</p>
                   </div>
 
                   <div>
@@ -249,15 +299,7 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
                       <Users className="h-4 w-4" />
                       Creators Joined
                     </div>
-                    <p className="text-3xl font-bold">{campaign.creators}</p>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <CheckCircle className="h-4 w-4" />
-                      Approval Rate
-                    </div>
-                    <p className="text-3xl font-bold text-green-500">{campaign.approvalRate}%</p>
+                    <p className="text-3xl font-bold">{campaign.creatorCount ?? 0}</p>
                   </div>
 
                   <div>
@@ -265,10 +307,14 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
                       <DollarSign className="h-4 w-4" />
                       Budget Progress
                     </div>
-                    <Progress value={(campaign.spent / campaign.budget) * 100} className="h-3 mb-2" />
+                    <Progress
+                      value={(campaign.budgetSpentPaise / Math.max(1, campaign.budgetTotalPaise)) * 100}
+                      className="h-3 mb-2"
+                      indicatorClassName="bg-yellow-400"
+                    />
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">₹{campaign.spent.toLocaleString()}</span>
-                      <span className="font-semibold">₹{campaign.budget.toLocaleString()}</span>
+                      <span className="text-muted-foreground">₹{(campaign.budgetSpentPaise / 100).toLocaleString()}</span>
+                      <span className="font-semibold">₹{(campaign.budgetTotalPaise / 100).toLocaleString()}</span>
                     </div>
                   </div>
 
@@ -278,7 +324,7 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
                       Campaign Duration
                     </div>
                     <p className="text-sm">
-                      {new Date(campaign.duration.start).toLocaleDateString()} - {new Date(campaign.duration.end).toLocaleDateString()}
+                      {campaign.startAt ? new Date(campaign.startAt).toLocaleDateString() : 'TBD'} - {campaign.endAt ? new Date(campaign.endAt).toLocaleDateString() : 'TBD'}
                     </p>
                   </div>
                 </CardContent>
@@ -304,7 +350,7 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
 
           {/* Platform Selection */}
           <div className="space-y-3">
-            {campaign.platforms.map((platform) => (
+            {formattedPlatforms.map((platform) => (
               <div
                 key={platform.id}
                 onClick={() => togglePlatform(platform.id)}
@@ -366,7 +412,7 @@ export function CampaignDetail({ campaignId, userRole, onJoin, onManage, onBack,
             </Button>
             <Button
               onClick={handleJoinConfirm}
-              disabled={selectedPlatforms.length === 0 || isJoining}
+              disabled={isJoinDisabled}
               className="flex-1 bg-gradient-to-r from-primary to-chart-2"
             >
               {isJoining ? 'Joining...' : 'Join Campaign'}

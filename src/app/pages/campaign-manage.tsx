@@ -7,7 +7,7 @@ import { Badge } from '@/app/components/ui/badge';
 import { Progress } from '@/app/components/ui/progress';
 import { Switch } from '@/app/components/ui/switch';
 import { Modal } from '@/app/components/modal';
-import { ArrowLeft, Edit, Calendar, DollarSign, Pause, Play, TrendingUp, Eye, Users, CheckCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, DollarSign, Pause, Play, TrendingUp, Eye, Users, Clock } from 'lucide-react';
 import { useState } from 'react';
 
 interface CampaignManageProps {
@@ -36,7 +36,6 @@ export function CampaignManage({ campaignId, onBack }: CampaignManageProps) {
     available: 20000,
     views: 1300000,
     creators: 45,
-    approvalRate: 92,
     startDate: '2026-01-15',
     endDate: '2026-03-15',
     platforms: ['Instagram', 'YouTube'],
@@ -115,7 +114,7 @@ export function CampaignManage({ campaignId, onBack }: CampaignManageProps) {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3 mb-2">
@@ -137,18 +136,6 @@ export function CampaignManage({ campaignId, onBack }: CampaignManageProps) {
               <p className="text-sm text-muted-foreground">Creators</p>
             </div>
             <p className="text-2xl font-bold">{campaign.creators}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <CheckCircle className="h-5 w-5 text-primary" />
-              </div>
-              <p className="text-sm text-muted-foreground">Approval Rate</p>
-            </div>
-            <p className="text-2xl font-bold">{campaign.approvalRate}%</p>
           </CardContent>
         </Card>
 
@@ -199,7 +186,7 @@ export function CampaignManage({ campaignId, onBack }: CampaignManageProps) {
                 <span>Budget Progress</span>
                 <span>{((campaign.spent / campaign.budget) * 100).toFixed(1)}%</span>
               </div>
-              <Progress value={(campaign.spent / campaign.budget) * 100} className="h-3" />
+              <Progress value={(campaign.spent / campaign.budget) * 100} className="h-3" indicatorClassName="bg-yellow-400" />
             </div>
           </CardContent>
         </Card>

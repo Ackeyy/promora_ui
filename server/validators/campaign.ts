@@ -8,6 +8,14 @@ export const createCampaignSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().min(1).max(5000),
   thumbnail: z.string().url().optional().or(z.literal('')),
+  videoUrl: z.string().url().optional().or(z.literal('')),
+  campaignType: z.string().max(50).optional(),
+  productType: z.string().max(200).optional(),
+  productLink: z.string().max(2000).optional(),
+  reviewContent: z.boolean().optional(),
+  platformRates: z.record(z.number().int().min(0)).optional(),
+  tags: z.array(z.string().min(1).max(50)).optional(),
+  requirements: z.array(z.string().min(1).max(200)).optional(),
   platforms: z.array(z.string()).min(1).transform((arr) => arr.map((p) => {
     const u = String(p).toUpperCase();
     if (u === 'YT') return 'YOUTUBE';

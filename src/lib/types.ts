@@ -18,6 +18,7 @@ export interface UserProfile {
     website?: string;
     verifiedBadge: boolean;
   };
+  creatorHandles?: Record<string, string>;
   onboardingComplete: boolean;
   adminEnabled?: boolean;
 }
@@ -27,14 +28,29 @@ export interface Campaign {
   title: string;
   description: string;
   thumbnail?: string;
+  videoUrl?: string;
+  campaignType?: string;
+  productType?: string;
+  productLink?: string;
+  reviewContent?: boolean;
   platforms: string[];
+  platformRates?: Record<string, number>;
   ratePer1kViewsPaise: number;
+  tags?: string[];
+  requirements?: string[];
   startAt: string;
   endAt: string;
   status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ENDED';
   budgetTotalPaise: number;
   budgetReservedPaise: number;
   budgetSpentPaise: number;
+  createdAt?: string;
+  host?: {
+    name: string;
+    email: string;
+    verifiedBadge: boolean;
+  };
+  creatorCount?: number;
 }
 
 export interface CampaignSubmission {

@@ -6,7 +6,10 @@ import { Badge } from '@/app/components/ui/badge';
 import { Switch } from '@/app/components/ui/switch';
 import { Label } from '@/app/components/ui/label';
 import { Search, Filter, Plus, Youtube, Instagram, Facebook } from 'lucide-react';
-import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
+import { useEffect, useMemo, useState } from 'react';
+import { api } from '@/lib/api';
+import type { Campaign } from '@/lib/types';
 
 interface CampaignDiscoverProps {
   onCampaignClick: (id: string) => void;
@@ -19,94 +22,79 @@ export function CampaignDiscover({ onCampaignClick, onCreateCampaign, userRole }
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [sortBy, setSortBy] = useState('recent');
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const campaigns = [
-    {
-      id: '1',
-      name: 'Summer Fashion Collection 2026',
-      thumbnail: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80',
-      tags: ['Fashion', 'Trending'],
-      ratePerView: 50,
-      budget: 100000,
-      spent: 65000,
-      approvalRate: 92,
-      views: 1300000,
-      creators: 45,
-      platforms: ['IG', 'YT'],
-    },
-    {
-      id: '2',
-      name: 'Tech Gadget Launch Campaign',
-      thumbnail: 'https://images.unsplash.com/photo-1519558260268-cde7e03a0152?w=800&q=80',
-      tags: ['Tech', 'Product'],
-      ratePerView: 70,
-      budget: 200000,
-      spent: 120000,
-      approvalRate: 88,
-      views: 1700000,
-      creators: 62,
-      platforms: ['YT', 'FB'],
-    },
-    {
-      id: '3',
-      name: 'Fitness & Wellness Challenge',
-      thumbnail: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&q=80',
-      tags: ['Fitness', 'Health'],
-      ratePerView: 45,
-      budget: 75000,
-      spent: 48000,
-      approvalRate: 95,
-      views: 1066000,
-      creators: 38,
-      platforms: ['IG', 'FB'],
-    },
-    {
-      id: '4',
-      name: 'Beauty & Skincare Routine',
-      thumbnail: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800&q=80',
-      tags: ['Beauty', 'Skincare'],
-      ratePerView: 55,
-      budget: 120000,
-      spent: 78000,
-      approvalRate: 90,
-      views: 1418000,
-      creators: 52,
-      platforms: ['IG', 'YT'],
-    },
-    {
-      id: '5',
-      name: 'Gaming Setup Showcase',
-      thumbnail: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&q=80',
-      tags: ['Gaming', 'Tech'],
-      ratePerView: 65,
-      budget: 150000,
-      spent: 92000,
-      approvalRate: 86,
-      views: 1415000,
-      creators: 48,
-      platforms: ['YT', 'FB'],
-    },
-    {
-      id: '6',
-      name: 'Healthy Meal Prep Series',
-      thumbnail: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80',
-      tags: ['Food', 'Health'],
-      ratePerView: 40,
-      budget: 85000,
-      spent: 55000,
-      approvalRate: 94,
-      views: 1375000,
-      creators: 41,
-      platforms: ['IG', 'FB'],
-    },
-  ];
-
-  const categories = ['Fashion', 'Tech', 'Fitness', 'Beauty', 'Gaming', 'Food', 'Lifestyle'];
+  const categories = useMemo(() => {
+    const tags = new Set<string>();
+    campaigns.forEach((campaign) => {
+      campaign.tags?.forEach((tag) => tags.add(tag));
+    });
+    return Array.from(tags);
+  }, [campaigns]);
   const platforms = [
-    { id: 'YT', label: 'YouTube', icon: <Youtube className="h-4 w-4" /> },
-    { id: 'IG', label: 'Instagram', icon: <Instagram className="h-4 w-4" /> },
-    { id: 'FB', label: 'Facebook', icon: <Facebook className="h-4 w-4" /> },
+    { id: 'YOUTUBE', label: 'YouTube', icon: <Youtube className="h-4 w-4" /> },
+    { id: 'INSTAGRAM', label: 'Instagram', icon: <Instagram className="h-4 w-4" /> },
+    { id: 'FACEBOOK', label: 'Facebook', icon: <Facebook className="h-4 w-4" /> },
   ];
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    api.getCampaigns('ACTIVE')
+      .then((res) => {
+        if (isMounted) setCampaigns(res.data);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredCampaigns = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const results = campaigns.filter((campaign) => {
+      const matchesQuery =
+        !query ||
+        campaign.title.toLowerCase().includes(query) ||
+        campaign.tags?.some((tag) => tag.toLowerCase().includes(query)) ||
+        campaign.host?.name?.toLowerCase().includes(query);
+      const matchesPlatforms =
+        selectedPlatforms.length === 0 ||
+        selectedPlatforms.some((platform) => campaign.platforms.includes(platform));
+      const matchesCategories =
+        selectedCategories.length === 0 ||
+        campaign.tags?.some((tag) => selectedCategories.includes(tag));
+      const matchesVerified =
+        !verifiedOnly || campaign.host?.verifiedBadge;
+      return matchesQuery && matchesPlatforms && matchesCategories && matchesVerified;
+    });
+
+    return results.slice().sort((a, b) => {
+      if (sortBy === 'budget') return b.budgetTotalPaise - a.budgetTotalPaise;
+      if (sortBy === 'rate') return b.ratePer1kViewsPaise - a.ratePer1kViewsPaise;
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
+  }, [campaigns, searchQuery, selectedPlatforms, selectedCategories, verifiedOnly, sortBy]);
+
+  const cards = filteredCampaigns.map((campaign) => ({
+    id: campaign.id,
+    name: campaign.title,
+    thumbnail: campaign.thumbnail ?? 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&q=80',
+    tags: campaign.tags ?? [],
+    ratePerView: Math.round(campaign.ratePer1kViewsPaise / 100),
+    budget: campaign.budgetTotalPaise / 100,
+    spent: campaign.budgetSpentPaise / 100,
+    views: 0,
+    creators: campaign.creatorCount ?? 0,
+    createdAt: campaign.createdAt,
+    host: campaign.host ? { name: campaign.host.name, verifiedBadge: campaign.host.verifiedBadge } : undefined,
+  }));
 
   const togglePlatform = (platform: string) => {
     setSelectedPlatforms((prev) =>
@@ -146,15 +134,27 @@ export function CampaignDiscover({ onCampaignClick, onCreateCampaign, userRole }
           )}
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Search campaigns..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-background"
-          />
+        {/* Search + Sort */}
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Search campaigns..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-background"
+            />
+          </div>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full md:w-48">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Newest</SelectItem>
+              <SelectItem value="budget">Budget (High to Low)</SelectItem>
+              <SelectItem value="rate">Rate (High to Low)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </motion.div>
 
@@ -235,11 +235,11 @@ export function CampaignDiscover({ onCampaignClick, onCreateCampaign, userRole }
         {/* Campaigns Grid */}
         <div className="flex-1">
           <div className="mb-4 text-sm text-muted-foreground">
-            Showing {campaigns.length} campaigns
+            {isLoading ? 'Loading campaigns...' : `Showing ${cards.length} campaigns`}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {campaigns.map((campaign, index) => (
+            {cards.map((campaign, index) => (
               <motion.div
                 key={campaign.id}
                 initial={{ opacity: 0, y: 20 }}

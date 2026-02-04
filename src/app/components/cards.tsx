@@ -86,16 +86,21 @@ interface CampaignCardProps {
     ratePerView: number;
     budget: number;
     spent: number;
-    approvalRate: number;
     views: number;
     creators: number;
-    platforms: string[];
+    createdAt?: string;
+    host?: {
+      name: string;
+      verifiedBadge?: boolean;
+    };
   };
   onClick?: () => void;
 }
 
 export function CampaignCard({ campaign, onClick }: CampaignCardProps) {
   const progress = (campaign.spent / campaign.budget) * 100;
+  const createdAt = campaign.createdAt ? new Date(campaign.createdAt) : null;
+  const daysAgo = createdAt ? Math.max(0, Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24))) : null;
 
   return (
     <motion.div
@@ -106,7 +111,7 @@ export function CampaignCard({ campaign, onClick }: CampaignCardProps) {
       onClick={onClick}
       className="cursor-pointer"
     >
-      <Card className="overflow-hidden hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 border-border hover:border-primary/50">
+      <Card className="overflow-hidden hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 border-border hover:border-primary/50 bg-card/80">
         {/* Thumbnail */}
         <div className="relative h-48 overflow-hidden bg-muted">
           <img
@@ -125,14 +130,11 @@ export function CampaignCard({ campaign, onClick }: CampaignCardProps) {
             ))}
           </div>
 
-          {/* Platforms */}
-          <div className="absolute top-3 right-3 flex gap-2">
-            {campaign.platforms.map((platform) => (
-              <Badge key={platform} variant="secondary" className="backdrop-blur-sm">
-                {platform}
-              </Badge>
-            ))}
-          </div>
+          {daysAgo !== null && (
+            <div className="absolute top-3 right-3 text-xs text-muted-foreground bg-background/70 px-2 py-1 rounded-full backdrop-blur-sm">
+              {daysAgo === 0 ? 'Today' : `${daysAgo} days ago`}
+            </div>
+          )}
 
           {/* Rate */}
           <div className="absolute bottom-3 left-3">
@@ -148,6 +150,14 @@ export function CampaignCard({ campaign, onClick }: CampaignCardProps) {
         </div>
 
         <CardContent className="p-4">
+          {campaign.host?.name && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+              <span className="font-medium text-foreground">{campaign.host.name}</span>
+              {campaign.host.verifiedBadge && (
+                <Badge className="bg-blue-500 text-white">Verified</Badge>
+              )}
+            </div>
+          )}
           <h3 className="font-semibold text-lg mb-3 line-clamp-2">{campaign.name}</h3>
 
           {/* Progress */}
@@ -156,15 +166,11 @@ export function CampaignCard({ campaign, onClick }: CampaignCardProps) {
               <span className="text-muted-foreground">Budget Progress</span>
               <span className="font-semibold">₹{campaign.spent.toLocaleString()} / ₹{campaign.budget.toLocaleString()}</span>
             </div>
-            <Progress value={progress} className="h-2" />
+            <Progress value={progress} className="h-2" indicatorClassName="bg-yellow-400" />
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Approval</p>
-              <p className="font-semibold text-sm">{campaign.approvalRate}%</p>
-            </div>
+          <div className="grid grid-cols-2 gap-3 text-center">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Views</p>
               <p className="font-semibold text-sm">{(campaign.views / 1000).toFixed(1)}k</p>
