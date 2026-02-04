@@ -141,20 +141,14 @@ export function AppSidebar({
         </div>
 
         <DropdownMenu open={settingsOpen} onOpenChange={setSettingsOpen}>
-          <div onMouseEnter={() => setSettingsOpen(true)} onMouseLeave={() => setSettingsOpen(false)}>
+          <div>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="w-full justify-start gap-3 text-sidebar-foreground/80">
                 <Menu className="h-4 w-4" />
                 Menu
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              side="right"
-              align="start"
-              className="w-56"
-              onMouseEnter={() => setSettingsOpen(true)}
-              onMouseLeave={() => setSettingsOpen(false)}
-            >
+            <DropdownMenuContent side="top" align="start" className="w-56">
               <DropdownMenuItem onClick={onSettings}>
                 <Settings className="mr-2 h-4 w-4" />
                 Account settings
