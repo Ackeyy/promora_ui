@@ -125,24 +125,26 @@ export function AppSidebar({
           );
         })}
 
-        <div className="pt-3 space-y-3">
-          <div className="flex items-center justify-between px-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            <span>Your campaigns</span>
-            <Search className="h-3.5 w-3.5" />
+        {user.role === 'host' && (
+          <div className="pt-3 space-y-3">
+            <div className="flex items-center justify-between px-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              <span>Your campaigns</span>
+              <Search className="h-3.5 w-3.5" />
+            </div>
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-sidebar-accent/70 text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+              <div className="h-8 w-8 rounded-lg bg-sidebar-accent flex items-center justify-center text-xs font-semibold">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-sm font-medium truncate">Active campaigns</span>
+            </button>
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl border border-sidebar-border text-sidebar-foreground/80 hover:bg-sidebar-accent/80 transition-colors">
+              <div className="h-8 w-8 rounded-lg bg-sidebar-accent/60 flex items-center justify-center text-base font-semibold">
+                +
+              </div>
+              <span className="text-sm font-medium">New campaign</span>
+            </button>
           </div>
-          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-sidebar-accent/70 text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
-            <div className="h-8 w-8 rounded-lg bg-sidebar-accent flex items-center justify-center text-xs font-semibold">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-sm font-medium truncate">Active campaigns</span>
-          </button>
-          <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl border border-sidebar-border text-sidebar-foreground/80 hover:bg-sidebar-accent/80 transition-colors">
-            <div className="h-8 w-8 rounded-lg bg-sidebar-accent/60 flex items-center justify-center text-base font-semibold">
-              +
-            </div>
-            <span className="text-sm font-medium">New campaign</span>
-          </button>
-        </div>
+        )}
       </nav>
 
       {/* Footer */}
