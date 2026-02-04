@@ -33,12 +33,20 @@ interface User {
   isHostVerified?: boolean;
   creatorEnabled: boolean;
   hostEnabled: boolean;
+  lastRoleUsed?: UserRole;
 }
 
 function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
+  const lastRole = p.lastRoleUsed === 'HOST' ? 'host' : p.lastRoleUsed === 'CREATOR' ? 'creator' : undefined;
   const role: UserRole =
     preferredRole ??
-    (p.roleMode.creatorEnabled ? 'creator' : p.roleMode.hostEnabled ? 'host' : 'creator');
+    (p.roleMode.creatorEnabled && p.roleMode.hostEnabled && lastRole
+      ? lastRole
+      : p.roleMode.creatorEnabled
+        ? 'creator'
+        : p.roleMode.hostEnabled
+          ? 'host'
+          : 'creator');
   return {
     id: p.id,
     name: p.name ?? p.email,
@@ -49,6 +57,7 @@ function profileToUser(p: UserProfile, preferredRole?: UserRole): User {
     isHostVerified: p.hostProfile?.verifiedBadge,
     creatorEnabled: p.roleMode.creatorEnabled,
     hostEnabled: p.roleMode.hostEnabled,
+    lastRoleUsed: lastRole,
   };
 }
 
@@ -173,6 +182,7 @@ export default function App() {
       setCurrentRole(newRole);
       return;
     }
+    api.updateMe({ lastRoleUsed: newRole === 'creator' ? 'CREATOR' : 'HOST' }).catch(() => null);
     setCurrentRole(newRole);
     setUser({ ...user, role: newRole });
     setCurrentPage('dashboard');
@@ -401,6 +411,7 @@ export default function App() {
                 type="button"
                 className="w-full rounded-lg border border-border bg-background px-4 py-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
                 onClick={() => {
+                  api.updateMe({ lastRoleUsed: 'CREATOR' }).catch(() => null);
                   setCurrentRole('creator');
                   setUser({ ...roleChoiceUser, role: 'creator' });
                   setRoleChoiceOpen(false);
@@ -415,6 +426,7 @@ export default function App() {
                 type="button"
                 className="w-full rounded-lg border border-border bg-background px-4 py-3 text-left transition-colors hover:border-primary/60 hover:bg-primary/5"
                 onClick={() => {
+                  api.updateMe({ lastRoleUsed: 'HOST' }).catch(() => null);
                   setCurrentRole('host');
                   setUser({ ...roleChoiceUser, role: 'host' });
                   setRoleChoiceOpen(false);
