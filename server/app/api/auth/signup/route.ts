@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         creatorEnabled: role === 'creator',
         hostEnabled: role === 'host',
+        modeType: role === 'creator' ? 'CREATOR' : 'HOST',
+        lastRoleUsed: role === 'creator' ? 'CREATOR' : 'HOST',
+        roleType: 'USER',
         onboardingDone: false,
       },
     });

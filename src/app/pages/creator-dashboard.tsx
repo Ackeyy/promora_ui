@@ -28,47 +28,23 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
   const [reverifyId, setReverifyId] = useState<string | null>(null);
 
   const earnings = {
-    today: 2450,
-    month: 45200,
-    year: 385000,
-    total: 1250000,
+    today: 0,
+    month: 0,
+    year: 0,
+    total: 0,
   };
 
-  const joinedCampaigns = [
-    {
-      id: '1',
-      name: 'Summer Fashion Collection 2026',
-      thumbnail: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&q=80',
-      rate: 50,
-      earned: 12500,
-      views: 250000,
-      status: 'active',
-      nextCycleDate: '2026-02-04T10:00:00',
-      canReverify: true,
-    },
-    {
-      id: '2',
-      name: 'Tech Gadget Launch Campaign',
-      thumbnail: 'https://images.unsplash.com/photo-1519558260268-cde7e03a0152?w=400&q=80',
-      rate: 70,
-      earned: 8400,
-      views: 120000,
-      status: 'active',
-      nextCycleDate: '2026-02-03T14:00:00',
-      canReverify: false,
-    },
-    {
-      id: '3',
-      name: 'Fitness & Wellness Challenge',
-      thumbnail: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80',
-      rate: 45,
-      earned: 6750,
-      views: 150000,
-      status: 'pending',
-      nextCycleDate: '2026-02-05T09:00:00',
-      canReverify: true,
-    },
-  ];
+  const joinedCampaigns: Array<{
+    id: string;
+    name: string;
+    thumbnail: string;
+    rate: number;
+    earned: number;
+    views: number;
+    status: 'active' | 'pending';
+    nextCycleDate: string;
+    canReverify: boolean;
+  }> = [];
 
   const handleUpload = async () => {
     if (!uploadModal.campaignId) return;
@@ -167,10 +143,10 @@ export function CreatorDashboard({ onCampaignClick, onDiscoverCampaigns, onToast
 
         <StatCard
           title="Total Views"
-          value="520k"
+          value="0"
           subtitle="Across all campaigns"
           icon={<Eye className="h-6 w-6 text-primary" />}
-          trend={{ value: 12, direction: 'up' }}
+          trend={{ value: 0, direction: 'up' }}
         />
       </div>
 
